@@ -1,7 +1,7 @@
 clear all; clc;
 data_folder='/home/range1-raid1/labounek/data-on-porto';
 project_folder=fullfile(data_folder,'ALD');
-xls_file = fullfile(project_folder,'results','ALD_20200812.xlsx');
+xls_file = fullfile(project_folder,'results','ALD_20230207.xlsx');
 
 addpath('/home/range1-raid1/labounek/toolbox/matlab/spm12');
 
@@ -115,8 +115,8 @@ for ind = 2:size(raw,1)
                 MD12_mat(ind-1,2) = mean(MD12_vec);
                 
                 % CST extraction
-                FA12_vec = FA12(jhu==7 | jhu==8);
-                MD12_vec = MD12(jhu==7 | jhu==8).*10^3;
+                FA12_vec = FA12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20); %| jhu==25 | jhu==26
+                MD12_vec = MD12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20).*10^3; %| jhu==25 | jhu==26
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,3) = mean(FA12_vec);
