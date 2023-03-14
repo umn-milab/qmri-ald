@@ -4,7 +4,7 @@ DATAFOLDER=/home/porto-raid2/nestrasil-data/$PROJECT
 #PROJECT=controls/brain_ALD
 #DATAFOLDER=/home/porto-raid2/nestrasil-data/$PROJECT
 
-LIST=$DATAFOLDER/subject_list_20230226.txt
+LIST=$DATAFOLDER/subject_list_20230307.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 RESULTFOLDER=$DATAFOLDER/results

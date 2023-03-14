@@ -1,7 +1,7 @@
 #/bin/bash
 DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
 
-LIST=$DATAFOLDER/subject_list_20230226.txt
+LIST=$DATAFOLDER/subject_list_20230307.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 
