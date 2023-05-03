@@ -57,7 +57,16 @@ if [ -f $NIIFOLDER/mprage.nii.gz ]; then
         dt=$(date '+%Y/%m/%d %H:%M:%S');
         echo "$dt $SESS: Warp JHU-ICBM atlas to mprage space done"
     fi
-	if [ -f $ITKFOLDER/*T1*[0-9]_Segmentation.nii.gz ] && [ ! -f $RESULTFOLDER/mprage_lesion.nii.gz ]; then
+	if [ -f $ITKFOLDER/*T1*[0-9]_Segmentation_v2.nii.gz ] && [ ! -f $RESULTFOLDER/mprage_lesion.nii.gz ]; then
+		dt=$(date '+%Y/%m/%d %H:%M:%S');
+		echo "$dt $SESS: copy lesion mask into mprage folder started"
+		cp $ITKFOLDER/*T1*[0-9]_Segmentation_v2.nii.gz $RESULTFOLDER/mprage_lesion.nii.gz
+		fslmaths $RESULTFOLDER/mprage_lesion.nii.gz -bin $RESULTFOLDER/mprage_lesion.nii.gz
+		fslreorient2std $RESULTFOLDER/mprage_lesion.nii.gz $RESULTFOLDER/mprage_lesion.nii.gz
+		chmod 660 $RESULTFOLDER/mprage_lesion.nii.gz
+		dt=$(date '+%Y/%m/%d %H:%M:%S');
+		echo "$dt $SESS: copy lesion mask into mprage folder done"
+	elif [ -f $ITKFOLDER/*T1*[0-9]_Segmentation.nii.gz ] && [ ! -f $RESULTFOLDER/mprage_lesion.nii.gz ]; then
 		dt=$(date '+%Y/%m/%d %H:%M:%S');
 		echo "$dt $SESS: copy lesion mask into mprage folder started"
 		cp $ITKFOLDER/*T1*[0-9]_Segmentation.nii.gz $RESULTFOLDER/mprage_lesion.nii.gz

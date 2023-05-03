@@ -232,13 +232,16 @@ for SUB in `cat $LIST`;do
 	    fi
         
         if [ ! -f $NIIFOLDER/$SESS/flair.nii.gz ];then
-			if [ -f $DICOMFOLDER/$SESS/T2*3DSPACE*SAG_Series*.nii.gz ] || [ -f $DICOMFOLDER/$SESS/ax*flair*fs_Series*.nii.gz ] || [ -f $DICOMFOLDER/$SESS/ax*flair*fs_2*.nii.gz ];then
+			if [ -f $DICOMFOLDER/$SESS/T2*3DSPACE*SAG_Series*.nii.gz ] || [ -f $DICOMFOLDER/$SESS/ax*flair*fs_Series*.nii.gz ] || [ -f $DICOMFOLDER/$SESS/ax*flair*fs_2*.nii.gz ] || [ -f $DICOMFOLDER/$SESS/Ax*FLAIR*FS*.nii.gz ];then
 				STRING="T2*3DSPACE*SAG_Series"
                 if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
                     STRING="ax*flair*fs_Series*"
                 fi
-				if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
+		if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
                     STRING="ax*flair*fs_2*"
+                fi
+		if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
+                    STRING="Ax*FLAIR*FS*"
                 fi
 				if [ -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
 					echo "$SESS: flair export from DICOM to NIFTI"
