@@ -3,8 +3,8 @@
 #DATAFOLDER=/home/labounek/data/ALD
 DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
 #DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/controls/brain_ALD
-NAME=dmri_12dir
-#NAME=mprage
+#NAME=dmri_12dir
+NAME=mprage
 #NAME=*Segmentation
 
 LIST=$DATAFOLDER/subject_list_20230307.txt

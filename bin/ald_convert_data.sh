@@ -28,6 +28,12 @@ for SUB in `cat $LIST`;do
             if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
                 STRING="MPRAGE*SAG_Series"
             fi
+			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+				STRING="SAG_T1_MPRAGE"
+			fi
+			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+				STRING="SAG_T1_MPRAGE_Series"
+			fi
             if [ ! -f $DICOMFOLDER/$SESS/*$STRING*.nii.gz ];then
                 STRING="MPRAGE_SAG_accelerated_Series"
             fi
@@ -64,6 +70,12 @@ for SUB in `cat $LIST`;do
 				if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
 		            STRING="T1*MPRAGE*SAG_Series"
 		        fi
+			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+		            STRING="SAG_T1_MPRAGE"
+		        fi
+			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+		            STRING="SAG_T1_MPRAGE_Series"
+		        fi
 		        if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
 		            STRING="MPRAGE*SAG_Series"
 		        fi
@@ -90,9 +102,6 @@ for SUB in `cat $LIST`;do
 		        fi
 			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
 		            STRING="SAG*T1*MPRAGE_Series"
-		        fi
-			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
-		            STRING="SAG_T1_MPRAGE"
 		        fi
 			if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
 		            STRING="T1_TFLASH_MPRAGE_SAG_PreContrast"
@@ -249,14 +258,17 @@ for SUB in `cat $LIST`;do
 					cp $DICOMFOLDER/$SESS/*$STRING*.json $NIIFOLDER/$SESS/flair.json
 					chmod 660 $NIIFOLDER/$SESS/flair.*
 				fi
-            elif [ -d $DICOMFOLDER/$SESS/T2*3DSPACE*SAG_Series* ] || [ -d $DICOMFOLDER/$SESS/ax*flair*fs_Series* ] || [ -d $DICOMFOLDER/$SESS/ax*flair*fs_2* ];then
+            elif [ -d $DICOMFOLDER/$SESS/T2*3DSPACE*SAG_Series* ] || [ -d $DICOMFOLDER/$SESS/ax*flair*fs_Series* ] || [ -d $DICOMFOLDER/$SESS/ax*flair*fs_2* ] || [ -d $DICOMFOLDER/$SESS/Sag_T2_Flair_Space_Series* ];then
                 # mprage export
                 STRING="T2*3DSPACE*SAG_Series"
                 if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
                     STRING="ax*flair*fs_Series*"
                 fi
-				if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+		if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
                     STRING="ax*flair*fs_2*"
+                fi
+		if [ ! -d $DICOMFOLDER/$SESS/*$STRING* ];then
+                    STRING="Sag_T2_Flair_Space_Series*"
                 fi
 				if [ -d $DICOMFOLDER/$SESS/*$STRING* ];then
 					echo "$SESS: flair export from DICOM to NIFTI"

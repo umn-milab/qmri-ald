@@ -10,6 +10,8 @@ addpath('/home/range1-raid1/labounek/toolbox/matlab/spm12');
 cols = size(raw,2);
 FA12_mat = zeros(size(raw,1)-1,121);
 MD12_mat = zeros(size(raw,1)-1,121);
+AD12_mat = zeros(size(raw,1)-1,28);
+RD12_mat = zeros(size(raw,1)-1,28);
 
 fslbls=[2;3;4;5;7;8;10;11;12;13;14;15;16;17;18;24;26;28;31;41;42;43;44;46;47;49;50;51;52;53;54;58;60;63;77;85;251;252;253;254;255];
 
@@ -27,6 +29,9 @@ for ind = 2:size(raw,1)
         FA12_file = fullfile(result_folder,'dti12_FA');
         jhu_file =  fullfile(result_folder,'jhu_labels');
         MD12_file = fullfile(result_folder,'dti12_MD');
+        AD12_file = fullfile(result_folder,'dti12_L1');
+        L212_file = fullfile(result_folder,'dti12_L2');
+        L312_file = fullfile(result_folder,'dti12_L2');
         aseg_file = fullfile(result_folder,'dmri_aseg');
         lesion_file = fullfile(result_folder,'dmri_lesion');
         dmrires=0;
@@ -47,6 +52,23 @@ for ind = 2:size(raw,1)
                 MD12 = spm_read_vols(MD12_file_hdr);
                 delete([MD12_file '.nii']);
                 
+                gunzip([AD12_file '.nii.gz']);
+                AD12_file_hdr = spm_vol([AD12_file '.nii']);
+                AD12 = spm_read_vols(AD12_file_hdr);
+                delete([AD12_file '.nii']);
+                
+                gunzip([L212_file '.nii.gz']);
+                L212_file_hdr = spm_vol([L212_file '.nii']);
+                L212 = spm_read_vols(L212_file_hdr);
+                delete([L212_file '.nii']);
+                
+                gunzip([L312_file '.nii.gz']);
+                L312_file_hdr = spm_vol([L312_file '.nii']);
+                L312 = spm_read_vols(L312_file_hdr);
+                delete([L312_file '.nii']);
+                
+                RD12 = (L212 + L312) / 2;
+                
                 dmrires=1;
         elseif isfile([FA12_file '.img'])
                 FA12_file_hdr = spm_vol([FA12_file '.img']);
@@ -58,6 +80,17 @@ for ind = 2:size(raw,1)
                 MD12_file_hdr = spm_vol([MD12_file '.img']);
                 MD12 = spm_read_vols(MD12_file_hdr);
                 
+                AD12_file_hdr = spm_vol([AD12_file '.img']);
+                AD12 = spm_read_vols(AD12_file_hdr);
+                
+                L212_file_hdr = spm_vol([L212_file '.img']);
+                L212 = spm_read_vols(L212_file_hdr);
+                
+                L312_file_hdr = spm_vol([L312_file '.img']);
+                L312 = spm_read_vols(L312_file_hdr);
+                
+                RD12 = (L212 + L312) / 2;
+                
                 dmrires=1;
         elseif isfile([FA12_file '.nii'])
                 FA12_file_hdr = spm_vol([FA12_file '.nii']);
@@ -68,6 +101,17 @@ for ind = 2:size(raw,1)
                  
                 MD12_file_hdr = spm_vol([MD12_file '.nii']);
                 MD12 = spm_read_vols(MD12_file_hdr);
+                
+                AD12_file_hdr = spm_vol([AD12_file '.nii']);
+                AD12 = spm_read_vols(AD12_file_hdr);
+                
+                L212_file_hdr = spm_vol([L212_file '.nii']);
+                L212 = spm_read_vols(L212_file_hdr);
+                
+                L312_file_hdr = spm_vol([L312_file '.nii']);
+                L312 = spm_read_vols(L312_file_hdr);
+                
+                RD12 = (L212 + L312) / 2;
                 
                 dmrires=1;
         end
@@ -94,9 +138,15 @@ for ind = 2:size(raw,1)
                 % JHU white matter extraction
                 FA12_vec = FA12(jhu>0);
                 MD12_vec = MD12(jhu>0).*10^3;
+                AD12_vec = AD12(jhu>0).*10^3;
+                RD12_vec = RD12(jhu>0).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 MD12_mat(ind-1,1) = mean(MD12_vec);
+                AD12_mat(ind-1,1) = mean(AD12_vec);
+                RD12_mat(ind-1,1) = mean(RD12_vec);
                 FA12_mat(ind-1,1) = mean(FA12_vec);
 %                 if ind == 2 || ind == 12 || ind == 73 || ind == 71
 %                         figure(ind)
@@ -109,114 +159,198 @@ for ind = 2:size(raw,1)
                 % Corpus callosum extraction
                 FA12_vec = FA12(jhu==3 | jhu==4 | jhu==5);
                 MD12_vec = MD12(jhu==3 | jhu==4 | jhu==5).*10^3;
+                AD12_vec = AD12(jhu==3 | jhu==4 | jhu==5).*10^3;
+                RD12_vec = RD12(jhu==3 | jhu==4 | jhu==5).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,2) = mean(FA12_vec);
                 MD12_mat(ind-1,2) = mean(MD12_vec);
+                AD12_mat(ind-1,2) = mean(AD12_vec);
+                RD12_mat(ind-1,2) = mean(RD12_vec);
                 
                 % CST extraction
                 FA12_vec = FA12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20); %| jhu==25 | jhu==26
                 MD12_vec = MD12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20).*10^3; %| jhu==25 | jhu==26
+                AD12_vec = AD12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20).*10^3; %| jhu==25 | jhu==26
+                RD12_vec = RD12(jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20).*10^3; %| jhu==25 | jhu==26
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,3) = mean(FA12_vec);
                 MD12_mat(ind-1,3) = mean(MD12_vec);
+                AD12_mat(ind-1,3) = mean(AD12_vec);
+                RD12_mat(ind-1,3) = mean(RD12_vec);
                 
                 % Cerebral peduncle extraction
                 FA12_vec = FA12(jhu==15 | jhu==16);
                 MD12_vec = MD12(jhu==15 | jhu==16).*10^3;
+                AD12_vec = AD12(jhu==15 | jhu==16).*10^3;
+                RD12_vec = RD12(jhu==15 | jhu==16).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,4) = mean(FA12_vec);
                 MD12_mat(ind-1,4) = mean(MD12_vec);
+                AD12_mat(ind-1,4) = mean(AD12_vec);
+                RD12_mat(ind-1,4) = mean(RD12_vec);
                 
                 % Anterior limb of internal capsule extraction
                 FA12_vec = FA12(jhu==17 | jhu==18);
                 MD12_vec = MD12(jhu==17 | jhu==18).*10^3;
+                AD12_vec = AD12(jhu==17 | jhu==18).*10^3;
+                RD12_vec = RD12(jhu==17 | jhu==18).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,5) = mean(FA12_vec);
                 MD12_mat(ind-1,5) = mean(MD12_vec);
+                AD12_mat(ind-1,5) = mean(AD12_vec);
+                RD12_mat(ind-1,5) = mean(RD12_vec);
                 
                 % Posterior limb of internal capsule extraction
                 FA12_vec = FA12(jhu==19 | jhu==20);
                 MD12_vec = MD12(jhu==19 | jhu==20).*10^3;
+                AD12_vec = AD12(jhu==19 | jhu==20).*10^3;
+                RD12_vec = RD12(jhu==19 | jhu==20).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,6) = mean(FA12_vec);
                 MD12_mat(ind-1,6) = mean(MD12_vec);
+                AD12_mat(ind-1,6) = mean(AD12_vec);
+                RD12_mat(ind-1,6) = mean(RD12_vec);
                 
                 % Retrolenticular part of internal capsule extraction
                 FA12_vec = FA12(jhu==21 | jhu==22);
                 MD12_vec = MD12(jhu==21 | jhu==22).*10^3;
+                AD12_vec = AD12(jhu==21 | jhu==22).*10^3;
+                RD12_vec = RD12(jhu==21 | jhu==22).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,7) = mean(FA12_vec);
                 MD12_mat(ind-1,7) = mean(MD12_vec);
+                AD12_mat(ind-1,7) = mean(AD12_vec);
+                RD12_mat(ind-1,7) = mean(RD12_vec);
                 
                 % Internal capsule extraction
                 FA12_vec = FA12(jhu>=17 & jhu<=22);
                 MD12_vec = MD12(jhu>=17 & jhu<=22).*10^3;
+                AD12_vec = AD12(jhu>=17 & jhu<=22).*10^3;
+                RD12_vec = RD12(jhu>=17 & jhu<=22).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,8) = mean(FA12_vec);
                 MD12_mat(ind-1,8) = mean(MD12_vec);
+                AD12_mat(ind-1,8) = mean(AD12_vec);
+                RD12_mat(ind-1,8) = mean(RD12_vec);
                 
                 % Anterior corona radiata extraction
                 FA12_vec = FA12(jhu==23 | jhu==24);
                 MD12_vec = MD12(jhu==23 | jhu==24).*10^3;
+                AD12_vec = AD12(jhu==23 | jhu==24).*10^3;
+                RD12_vec = RD12(jhu==23 | jhu==24).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,9) = mean(FA12_vec);
                 MD12_mat(ind-1,9) = mean(MD12_vec);
+                AD12_mat(ind-1,9) = mean(AD12_vec);
+                RD12_mat(ind-1,9) = mean(RD12_vec);
                 
                 % Superior corona radiata extraction
                 FA12_vec = FA12(jhu==25 | jhu==26);
                 MD12_vec = MD12(jhu==25 | jhu==26).*10^3;
+                AD12_vec = AD12(jhu==25 | jhu==26).*10^3;
+                RD12_vec = RD12(jhu==25 | jhu==26).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,10) = mean(FA12_vec);
                 MD12_mat(ind-1,10) = mean(MD12_vec);
+                AD12_mat(ind-1,10) = mean(AD12_vec);
+                RD12_mat(ind-1,10) = mean(RD12_vec);
                 
                 % Posterior corona radiata extraction
                 FA12_vec = FA12(jhu==27 | jhu==28);
                 MD12_vec = MD12(jhu==27 | jhu==28).*10^3;
+                AD12_vec = AD12(jhu==27 | jhu==28).*10^3;
+                RD12_vec = RD12(jhu==27 | jhu==28).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,11) = mean(FA12_vec);
                 MD12_mat(ind-1,11) = mean(MD12_vec);
+                AD12_mat(ind-1,11) = mean(AD12_vec);
+                RD12_mat(ind-1,11) = mean(RD12_vec);
                 
                 % Sagittal stratum extraction
                 FA12_vec = FA12(jhu==31 | jhu==32);
                 MD12_vec = MD12(jhu==31 | jhu==32).*10^3;
+                AD12_vec = AD12(jhu==31 | jhu==32).*10^3;
+                RD12_vec = RD12(jhu==31 | jhu==32).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,12) = mean(FA12_vec);
                 MD12_mat(ind-1,12) = mean(MD12_vec);
+                AD12_mat(ind-1,12) = mean(AD12_vec);
+                RD12_mat(ind-1,12) = mean(RD12_vec);
                 
                 % Cingulum extraction
                 FA12_vec = FA12(jhu>=35 & jhu<=38);
                 MD12_vec = MD12(jhu>=35 & jhu<=38).*10^3;
+                AD12_vec = AD12(jhu>=35 & jhu<=38).*10^3;
+                RD12_vec = RD12(jhu>=35 & jhu<=38).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,13) = mean(FA12_vec);
                 MD12_mat(ind-1,13) = mean(MD12_vec);
+                AD12_mat(ind-1,13) = mean(AD12_vec);
+                RD12_mat(ind-1,13) = mean(RD12_vec);
                 
                 % Tapetum extraction
                 FA12_vec = FA12(jhu==47 | jhu==48);
                 MD12_vec = MD12(jhu==47 | jhu==48).*10^3;
+                AD12_vec = AD12(jhu==47 | jhu==48).*10^3;
+                RD12_vec = RD12(jhu==47 | jhu==48).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,14) = mean(FA12_vec);
                 MD12_mat(ind-1,14) = mean(MD12_vec);
+                AD12_mat(ind-1,14) = mean(AD12_vec);
+                RD12_mat(ind-1,14) = mean(RD12_vec);
                 
                 % Corpus callosum + Tapetum extraction
                 FA12_vec = FA12(jhu==3 | jhu==4 | jhu==5 | jhu==47 | jhu==48);
                 MD12_vec = MD12(jhu==3 | jhu==4 | jhu==5 | jhu==47 | jhu==48).*10^3;
+                AD12_vec = AD12(jhu==3 | jhu==4 | jhu==5 | jhu==47 | jhu==48).*10^3;
+                RD12_vec = RD12(jhu==3 | jhu==4 | jhu==5 | jhu==47 | jhu==48).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,15) = mean(FA12_vec);
                 MD12_mat(ind-1,15) = mean(MD12_vec);
+                AD12_mat(ind-1,15) = mean(AD12_vec);
+                RD12_mat(ind-1,15) = mean(RD12_vec);
                 
 %                 if ind == 2 || ind == 12 || ind == 73 || ind == 71
 %                         subplot(2,2,3)
@@ -230,10 +364,22 @@ for ind = 2:size(raw,1)
                         % JHU atlas single-roi extractions
                         FA12_vec = FA12(jhu==lbls(roi_ind,1));
                         MD12_vec = MD12(jhu==lbls(roi_ind,1)).*10^3;
+                        if lbls(roi_ind,1) <= 5
+                            AD12_vec = AD12(jhu==lbls(roi_ind,1)).*10^3;
+                            RD12_vec = RD12(jhu==lbls(roi_ind,1)).*10^3;
+                        end
                         MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                        if lbls(roi_ind,1) <= 5
+                            AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                            RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                        end
                         FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                         FA12_mat(ind-1,roi_ind+15) = mean(FA12_vec);
-                        MD12_mat(ind-1,roi_ind+15) = mean(MD12_vec);                   
+                        MD12_mat(ind-1,roi_ind+15) = mean(MD12_vec);
+                        if lbls(roi_ind,1) <= 5
+                            AD12_mat(ind-1,roi_ind+15) = mean(AD12_vec);
+                            RD12_mat(ind-1,roi_ind+15) = mean(RD12_vec);
+                        end
                 end
                 if asegres == 1                     
                         for fsroi_ind = 1:size(fslbls,1)
@@ -322,78 +468,132 @@ for ind = 2:size(raw,1)
                 % JHU: WM without lesion extraction
                 FA12_vec = FA12( jhu>0 & lesion~=1 );
                 MD12_vec = MD12( jhu>0 & lesion~=1 ).*10^3;
+                AD12_vec = AD12( jhu>0 & lesion~=1 ).*10^3;
+                RD12_vec = RD12( jhu>0 & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+10) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+10) = mean(MD12_vec);
+                AD12_mat(ind-1,21) = mean(AD12_vec);
+                RD12_mat(ind-1,21) = mean(RD12_vec);
 
                 % JHU: Corpus callosum without lesion extraction
                 FA12_vec = FA12( (jhu==3 | jhu==4 | jhu==5) & lesion~=1 );
                 MD12_vec = MD12( (jhu==3 | jhu==4 | jhu==5) & lesion~=1 ).*10^3;
+                AD12_vec = AD12( (jhu==3 | jhu==4 | jhu==5) & lesion~=1 ).*10^3;
+                RD12_vec = RD12( (jhu==3 | jhu==4 | jhu==5) & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+11) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+11) = mean(MD12_vec);
+                AD12_mat(ind-1,22) = mean(AD12_vec);
+                RD12_mat(ind-1,22) = mean(RD12_vec);
 
                 % JHU: CST without lesion extraction
                 FA12_vec = FA12( (jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20) & lesion~=1 );
                 MD12_vec = MD12( (jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20) & lesion~=1 ).*10^3;
+                AD12_vec = AD12( (jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20) & lesion~=1 ).*10^3;
+                RD12_vec = RD12( (jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20) & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+12) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+12) = mean(MD12_vec);
+                AD12_mat(ind-1,23) = mean(AD12_vec);
+                RD12_mat(ind-1,23) = mean(RD12_vec);
 
                 % JHU: Genu of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==3 & lesion~=1 );
                 MD12_vec = MD12( jhu==3 & lesion~=1 ).*10^3;
+                AD12_vec = AD12( jhu==3 & lesion~=1 ).*10^3;
+                RD12_vec = RD12( jhu==3 & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+13) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+13) = mean(MD12_vec);
+                AD12_mat(ind-1,24) = mean(AD12_vec);
+                RD12_mat(ind-1,24) = mean(RD12_vec);
 
                 % JHU: Body of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==4 & lesion~=1 );
                 MD12_vec = MD12( jhu==4 & lesion~=1 ).*10^3;
+                AD12_vec = AD12( jhu==4 & lesion~=1 ).*10^3;
+                RD12_vec = RD12( jhu==4 & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+14) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+14) = mean(MD12_vec);
+                AD12_mat(ind-1,25) = mean(AD12_vec);
+                RD12_mat(ind-1,25) = mean(RD12_vec);
 
                 % JHU: Splenium of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==5 & lesion~=1 );
                 MD12_vec = MD12( jhu==5 & lesion~=1 ).*10^3;
+                AD12_vec = AD12( jhu==5 & lesion~=1 ).*10^3;
+                RD12_vec = RD12( jhu==5 & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+15) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+15) = mean(MD12_vec);
+                AD12_mat(ind-1,26) = mean(AD12_vec);
+                RD12_mat(ind-1,26) = mean(RD12_vec);
 
                 % JHU: Retrolenticular part of internal capsule without lesion
                 FA12_vec = FA12( (jhu==21 | jhu==22) & lesion~=1 );
                 MD12_vec = MD12( (jhu==21 | jhu==22) & lesion~=1 ).*10^3;
+                AD12_vec = AD12( (jhu==21 | jhu==22) & lesion~=1 ).*10^3;
+                RD12_vec = RD12( (jhu==21 | jhu==22) & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+16) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+16) = mean(MD12_vec);
+                AD12_mat(ind-1,27) = mean(AD12_vec);
+                RD12_mat(ind-1,27) = mean(RD12_vec);
 
                 % JHU: Anterior corona radiata without lesion
                 FA12_vec = FA12( (jhu==23 | jhu==24) & lesion~=1 );
                 MD12_vec = MD12( (jhu==23 | jhu==24) & lesion~=1 ).*10^3;
+                AD12_vec = AD12( (jhu==23 | jhu==24) & lesion~=1 ).*10^3;
+                RD12_vec = RD12( (jhu==23 | jhu==24) & lesion~=1 ).*10^3;
                 MD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                AD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
+                RD12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+17) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+17) = mean(MD12_vec);
+                AD12_mat(ind-1,28) = mean(AD12_vec);
+                RD12_mat(ind-1,28) = mean(RD12_vec);
         end
         disp(['Acquisition n. ' num2str(ind-1) ' processed.'])
 end
 
-metrics = [FA12_mat MD12_mat];
+metrics = [FA12_mat MD12_mat AD12_mat RD12_mat];
 metrics(metrics==0) = NaN;
 
 var_name1=cell(0,0);
 var_name2=cell(0,0);
+var_name5=cell(0,0);
+var_name6=cell(0,0);
 for roi_ind = 1:size(lbls,1)
         var_name1{1,roi_ind} = ['FA12_jhu_' num2str(lbls(roi_ind,1))];
         var_name2{1,roi_ind} = ['MD12_jhu_' num2str(lbls(roi_ind,1))];
+        if lbls(roi_ind,1) <=5
+            var_name5{1,roi_ind} = ['AD12_jhu_' num2str(lbls(roi_ind,1))];
+            var_name6{1,roi_ind} = ['RD12_jhu_' num2str(lbls(roi_ind,1))];
+        end
 end
 var_name3=cell(0,0);
 var_name4=cell(0,0);
@@ -405,8 +605,12 @@ var_name = [ {'FA12_jhu_wm' 'FA12_jhu_cc' 'FA12_jhu_cst' 'FA12_jhu_CerebrPeduncl
     {'FA12_fs_wm' 'FA12_fs_cc' 'FA12_fs_crblwm' 'FA12_fs_splNOles' 'FA12_fs_spl&les' 'FA12_fs_ccNOles' 'FA12_fs_cc&les' 'FA12_fs_wmNOles' 'FA12_fs_wm&les' 'FA12_jhu_wmNOles' 'FA12_jhu_ccNOles' 'FA12_jhu_cstNOles' 'FA12_jhu_3NOles' 'FA12_jhu_4NOles' 'FA12_jhu_5NOles' 'FA12_jhu_retroICNOles' 'FA12_jhu_aCRNOles'}...
     {'MD12_jhu_wm' 'MD12_jhu_cc' 'MD12_jhu_cst' 'MD12_jhu_CerebrPeduncle' 'MD12_jhu_aIC' 'MD12_jhu_pIC' 'MD12_jhu_retroIC'...
     'MD12_jhu_IC' 'MD12_jhu_aCR' 'MD12_jhu_sCR' 'MD12_jhu_pCR' 'MD12_jhu_sagStratum' 'MD12_jhu_cing' 'MD12_jhu_tapet' 'MD12_jhu_cc+tapet'} var_name2 var_name4 ...
-    {'MD12_fs_wm' 'MD12_fs_cc' 'MD12_fs_crblwm' 'MD12_fs_splNOles' 'MD12_fs_spl&les' 'MD12_fs_ccNOles' 'MD12_fs_cc&les' 'MD12_fs_wmNOles' 'MD12_fs_wm&les' 'MD12_jhu_wmNOles' 'MD12_jhu_ccNOles' 'MD12_jhu_cstNOles' 'MD12_jhu_3NOles' 'MD12_jhu_4NOles' 'MD12_jhu_5NOles' 'MD12_jhu_retroICNOles' 'MD12_jhu_aCRNOles'}];
-clear var_name1 var_name2
+    {'MD12_fs_wm' 'MD12_fs_cc' 'MD12_fs_crblwm' 'MD12_fs_splNOles' 'MD12_fs_spl&les' 'MD12_fs_ccNOles' 'MD12_fs_cc&les' 'MD12_fs_wmNOles' 'MD12_fs_wm&les' 'MD12_jhu_wmNOles' 'MD12_jhu_ccNOles' 'MD12_jhu_cstNOles' 'MD12_jhu_3NOles' 'MD12_jhu_4NOles' 'MD12_jhu_5NOles' 'MD12_jhu_retroICNOles' 'MD12_jhu_aCRNOles'} ...
+    {'AD12_jhu_wm' 'AD12_jhu_cc' 'AD12_jhu_cst' 'AD12_jhu_CerebrPeduncle' 'AD12_jhu_aIC' 'AD12_jhu_pIC' 'AD12_jhu_retroIC' 'AD12_jhu_IC' 'AD12_jhu_aCR' 'AD12_jhu_sCR' 'AD12_jhu_pCR' 'AD12_jhu_sagStratum' 'AD12_jhu_cing' 'AD12_jhu_tapet' 'AD12_jhu_cc+tapet'} var_name5 ...
+    {'AD12_jhu_wmNOles' 'AD12_jhu_ccNOles' 'AD12_jhu_cstNOles' 'AD12_jhu_3NOles' 'AD12_jhu_4NOles' 'AD12_jhu_5NOles' 'AD12_jhu_retroICNOles' 'AD12_jhu_aCRNOles'} ...
+    {'RD12_jhu_wm' 'RD12_jhu_cc' 'RD12_jhu_cst' 'RD12_jhu_CerebrPeduncle' 'RD12_jhu_aIC' 'RD12_jhu_pIC' 'RD12_jhu_retroIC' 'RD12_jhu_IC' 'RD12_jhu_aCR' 'RD12_jhu_sCR' 'RD12_jhu_pCR' 'RD12_jhu_sagStratum' 'RD12_jhu_cing' 'RD12_jhu_tapet' 'RD12_jhu_cc+tapet'} var_name6 ...
+    {'RD12_jhu_wmNOles' 'RD12_jhu_ccNOles' 'RD12_jhu_cstNOles' 'RD12_jhu_3NOles' 'RD12_jhu_4NOles' 'RD12_jhu_5NOles' 'RD12_jhu_retroICNOles' 'RD12_jhu_aCRNOles'}];
+% clear var_name1 var_name2 var_name3 var_name4 var_name5 var_name6
 
 % origin=size(raw,2);
 % for rw = 1:size(raw,1)

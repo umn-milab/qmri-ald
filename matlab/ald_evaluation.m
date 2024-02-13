@@ -1,8 +1,31 @@
 clear all; close all;
 data_folder='/home/range1-raid1/labounek/data-on-porto';
 project_folder=fullfile(data_folder,'ALD');
-xls_file = fullfile(project_folder,'results','ALD_20230307_Selection202302.xlsx');
-save_path = '/home/range1-raid1/labounek/data-on-porto/ALD/pictures/20230307/graphs';
+xls_file = fullfile(project_folder,'results','ALD_20230307_Selection202304.xlsx');
+save_path = '/home/range1-raid1/labounek/data-on-porto/ALD/pictures/20230307/graphs202304';
+
+draw_boxplot_dist = 1;
+box_order = [2:5 1 6];
+rd_order = [2:4 1 5];
+md_order = [2:4 1 5];
+ad_order = [2:4 1 5];
+
+draw_predict_corr = 0; % Value 0, 1 or 2
+% neuropsych_draw = 'Processing Speed';
+% neuropsych_draw = 'Visual Reasoning';
+% neuropsych_draw = 'Visual-Motor Integration';
+% neuropsych_draw = 'Verbal Reasoning';
+% neuropsych_draw = 'Working Memory';
+neuropsych_draw = 'Fine Motor Dexterity';
+
+% neuropsych_order = 'xpre-ypost';
+% neuropsych_order = 'xpre-ypre';
+neuropsych_order = 'trend';
+
+include_advanced = 1;
+show_rapid = 0;
+
+neuropsych_name_select = {'Processing Speed', 'Visual Reasoning','Visual-Motor Integration','Verbal Reasoning','Working Memory','Fine Motor Dexterity'};
 
 jhu_labels = {
     1 'Middle cerebellar peduncle'
@@ -110,29 +133,31 @@ for ind = 1:size(subid,1)
 end
 subnum(1)=[];
 
-% selection=[raw{2:end,336}]';
-selection=[raw{2:end,377}]';
-early_disease=[raw{2:end,354}]';
-slow_progression=[raw{2:end,355}]';
-loes=[raw{2:end,353}]';
+selection=[raw{2:end,strcmp(raw(1,:),'Selection202304')}]';
+early_disease=[raw{2:end,strcmp(raw(1,:),'Early-Disease')}]';
+slow_progression=[raw{2:end,strcmp(raw(1,:),'Slow-Progression')}]';
+loes=[raw{2:end,strcmp(raw(1,:),'LoesScore2023')}]';
 
-varidxdmri = 20:261;
-varidxvol = [262:293 301:321 328:336];
-varidxsurf = 322:323;
-varidxthick = 337:339;
-varidxles = 365:369;%321:325;
-varidxlessplit = 370:371;
+varidxdmri = find(strcmp(raw(1,:),'FA12_jhu_wm')==1):find(strcmp(raw(1,:),'RD12_jhu_aCRNOles')==1);
+varidxvol = [find(strcmp(raw(1,:),'Left-Lateral-Ventricle')==1):find(strcmp(raw(1,:),'Right-choroid-plexus')==1) ...
+    find(strcmp(raw(1,:),'Optic-Chiasm')==1):find(strcmp(raw(1,:),'MaskVol')==1) ...
+    find(strcmp(raw(1,:),'Total Ventricles')==1):find(strcmp(raw(1,:),'BGG+Thalamus')==1)];
+varidxsurf = find(strcmp(raw(1,:),'BrainSegVol-to-eTIV')==1):find(strcmp(raw(1,:),'MaskVol-to-eTIV')==1);
+varidxthick = find(strcmp(raw(1,:),'thickness-lh')==1):find(strcmp(raw(1,:),'thickness-avg')==1);
+varidxles = find(strcmp(raw(1,:),'LesionVol')==1):find(strcmp(raw(1,:),'CerebralWMLesionVol')==1);
+varidxlessplit = find(strcmp(raw(1,:),'RightLesionVol')==1):find(strcmp(raw(1,:),'LeftLesionVol')==1);
+varidxneuropsych = find(strcmp(raw(1,:),'FSIQ')==1):find(strcmp(raw(1,:),'VMI')==1);
 
-ageatscan=[raw{2:end,9}]';
-time=[raw{2:end,8}]';
-type=[raw{2:end,10}]';
+ageatscan=[raw{2:end,strcmp(raw(1,:),'Age at Scan')}]';
+time=[raw{2:end,strcmp(raw(1,:),'Time (days)')}]';
+type=[raw{2:end,strcmp(raw(1,:),'Type')}]';
 type2020=[raw{2:end,11}]';
-dmri12voxelvol = [raw{2:end,348}]';
-mpragevoxelvol = [raw{2:end,364}]';%320
-intracranvol=[raw{2:end,327}]';
+dmri12voxelvol = [raw{2:end,strcmp(raw(1,:),'dmri_12dir_vol')}]';
+mpragevoxelvol = [raw{2:end,strcmp(raw(1,:),'mprage_vol')}]';
+intracranvol=[raw{2:end,strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')}]';
 
 
-BrainSegVolNotVent = [raw{2:end,308}]';
+BrainSegVolNotVent = [raw{2:end,strcmp(raw(1,:),'BrainSegVolNotVent')}]';
 
 bmttime=zeros(size(raw,1)-1,1);
 bmtage=zeros(size(raw,1)-1,1);
@@ -140,11 +165,27 @@ dmri=zeros(size(raw,1)-1,size(varidxdmri,2));
 vols=zeros(size(raw,1)-1,size(varidxvol,2));
 surface=zeros(size(raw,1)-1,size(varidxsurf,2));
 thickness=zeros(size(raw,1)-1,size(varidxthick,2));
+neuropsych = NaN*ones(size(raw,1)-1,length(varidxneuropsych));
 
 for ind = 2:size(raw,1)
-    if ~ischar(raw{ind,350})
-        bmttime(ind-1,1) = raw{ind,350};
-        bmtage(ind-1,1) = raw{ind,5};
+    for vr = 1:length(varidxneuropsych)
+        if ~strcmp(raw{ind,varidxneuropsych(vr)},'.') && ~isnan(raw{ind,varidxneuropsych(vr)})
+            neuropsych(ind-1,vr) = raw{ind,varidxneuropsych(vr)};
+        end
+    end
+end
+neuropsych_name = {raw{1,varidxneuropsych}};
+percept = neuropsych(:,strcmp(neuropsych_name,'PERCEPT'));
+psi = neuropsych(:,strcmp(neuropsych_name,'PSI'));
+vmi = neuropsych(:,strcmp(neuropsych_name,'VMI'));
+verbal = neuropsych(:,strcmp(neuropsych_name,'VERBAL'));
+wmi = neuropsych(:,strcmp(neuropsych_name,'WMI'));
+fmdex = neuropsych(:,strcmp(neuropsych_name,'Pegs-Ave'));
+
+for ind = 2:size(raw,1)
+    if ~ischar(raw{ind,strcmp(raw(1,:),'time to BMT [day]')})
+        bmttime(ind-1,1) = raw{ind,strcmp(raw(1,:),'time to BMT [day]')};
+        bmtage(ind-1,1) = raw{ind,strcmp(raw(1,:),'Age at HSCT1')};
     else
         if selection(ind-1,1)==1
 %             bmttime(ind-1,1) = -110+round(randn(1,1)*8);
@@ -167,7 +208,7 @@ dmri_name = {raw{1,varidxdmri}};
 ageattransplant = zeros(size(ageatscan));
 for ind = 1:size(ageattransplant,1)
     if type2020(ind) > 1
-        ageattransplant(ind) = raw{ind+1,5};
+        ageattransplant(ind) = raw{ind+1,strcmp(raw(1,:),'Age at HSCT1')};
     end
 end
 
@@ -217,13 +258,18 @@ spleniumvol_mean = zeros(size(lesion,1),1);
 cerebralwmvol_mean = zeros(size(lesion,1),1);
 for ind = 1:size(subid,1)
     sbpos=subnum==ind;
-    spleniumvol_mean(sbpos,1) = mean(lesion(sbpos,2));
-    cerebralwmvol_mean(sbpos,1) = mean(lesion(sbpos,4));
+    spleniumvol_mean(sbpos,1) = mean(lesion(sbpos,2),'omitnan');
+    cerebralwmvol_mean(sbpos,1) = mean(lesion(sbpos,4),'omitnan');
 end
 lesion_name = {raw{1,varidxles}};
 
 lesion_brainnoventnorm = 100*lesion(:,[1 3 5])./BrainSegVolNotVent;
 lesion_brainnoventnorm_name = lesion_name(1,[1 3 5]);
+for ind = 1:size(lesion_brainnoventnorm_name,2)
+    lesion_brainnoventnorm_name{1,ind} = [lesion_brainnoventnorm_name{1,ind} '_BrainSegVolNotVent'];
+end
+lesionmm3 = lesion(:,1);
+lesionmm3_name = {'Lesion Volume [mm^3]'};
 
 lesion(:,3) = lesion(:,3) ./ spleniumvol_mean .* 100;
 lesion(:,5) = lesion(:,5) ./ cerebralwmvol_mean .* 100;
@@ -233,8 +279,8 @@ lesion(:,4) = lesion(:,4) ./ intracranvol_mean .* 100;
 lesion(isnan(vols(:,20)),2:5)=NaN;
 
 
-data = [thickness surface lesion vols dmri loes lesion_brainnoventnorm];
-data_name = [thickness_name surface_name lesion_name vols_name dmri_name 'LoesScore' lesion_brainnoventnorm_name];
+data = [thickness surface lesion vols dmri loes lesion_brainnoventnorm neuropsych lesionmm3];
+data_name = [thickness_name surface_name lesion_name vols_name dmri_name 'LoesScore' lesion_brainnoventnorm_name neuropsych_name lesionmm3_name];
 
 for ind = 1:size(data_name,2)
     for ps = 1:size(data_name{1,ind},2)
@@ -379,8 +425,17 @@ for scan = 1:2
     end
 end
 
+% CerebralWhiteMatterVol CerebralWMVol
 
-data_name_select = {'FA12-jhu-wm' 'FA12-jhu-cc' 'FA12-jhu-5' 'FA12-jhu-3' 'FA12-jhu-4' 'FA12-jhu-cst'}; % 'FA12-jhu-aCR' 'FA12-jhu-retroIC'
+data_name_select = {'CortexVol' 'CerebralWhiteMatterVol' 'Total Ventricles' 'Thalamus' 'BGG' 'thickness-avg'... %  'LoesScore' 'LesionVol' 'Lesion Volume [mm^3]' 'BGG' 'thickness-avg' 
+    'FA12-jhu-wm' 'FA12-jhu-cc' 'FA12-jhu-5' 'FA12-jhu-3' 'FA12-jhu-4' 'FA12-jhu-cst' ...
+    'MD12-jhu-wm' 'MD12-jhu-cc' 'MD12-jhu-5' 'MD12-jhu-3' 'MD12-jhu-4' 'MD12-jhu-cst' ...
+    'RD12-jhu-wm' 'RD12-jhu-cc' 'RD12-jhu-5' 'RD12-jhu-3' 'RD12-jhu-4' 'RD12-jhu-cst' ...
+    'AD12-jhu-wm' 'AD12-jhu-cc' 'AD12-jhu-5' 'AD12-jhu-3' 'AD12-jhu-4' 'AD12-jhu-cst' ...
+    'FA12-jhu-wmNOles' 'FA12-jhu-ccNOles' 'FA12-jhu-5NOles' 'FA12-jhu-3NOles' 'FA12-jhu-4NOles' 'FA12-jhu-cstNOles' ...
+    'MD12-jhu-wmNOles' 'MD12-jhu-ccNOles' 'MD12-jhu-5NOles' 'MD12-jhu-3NOles' 'MD12-jhu-4NOles' 'MD12-jhu-cstNOles' ...
+    'RD12-jhu-wmNOles' 'RD12-jhu-ccNOles' 'RD12-jhu-5NOles' 'RD12-jhu-3NOles' 'RD12-jhu-4NOles' 'RD12-jhu-cstNOles' ...
+    'AD12-jhu-wmNOles' 'AD12-jhu-ccNOles' 'AD12-jhu-5NOles' 'AD12-jhu-3NOles' 'AD12-jhu-4NOles' 'AD12-jhu-cstNOles'}; % 'FA12-jhu-aCR' 'FA12-jhu-retroIC'
 data_select_pos = zeros(size(data_name_select,2),1);
 st_abstract{2,1} = 'Measure - Atlas - Region of Interest';
 st_abstract{1,2} = 'No Lesion (G1)';
@@ -390,35 +445,117 @@ st_abstract{2,4} = 'post-Mean';
 st_abstract{2,5} = 'post-STD';
 st_abstract{2,6} = 'slope-Mean';
 st_abstract{2,7} = 'slope-STD';
-st_abstract{1,8} = 'Posterior Lesion (0<Loes<=4.5; G2)';
+st_abstract{1,8} = 'Posterior Lesion (0<Loes<=2; G2)';
 st_abstract{2,8} = 'pre-Mean';
 st_abstract{2,9} = 'pre-STD';
 st_abstract{2,10} = 'post-Mean';
 st_abstract{2,11} = 'post-STD';
 st_abstract{2,12} = 'slope-Mean';
 st_abstract{2,13} = 'slope-STD';
-st_abstract{1,14} = 'Posterior Lesion (4.5<Loes; G3)';
+st_abstract{1,14} = 'Posterior Lesion (0<Loes<=4.5; G3)';
 st_abstract{2,14} = 'pre-Mean';
 st_abstract{2,15} = 'pre-STD';
 st_abstract{2,16} = 'post-Mean';
 st_abstract{2,17} = 'post-STD';
 st_abstract{2,18} = 'slope-Mean';
 st_abstract{2,19} = 'slope-STD';
-st_abstract{1,20} = 'Wilcoxon rank sum tests (p-values)';
-st_abstract{2,20} = 'pre-G1vsG2';
-st_abstract{2,21} = 'pre-G1vsG3';
-st_abstract{2,22} = 'slope-G1vsG2';
-st_abstract{2,23} = 'slope-G1vsG3';
+st_abstract{1,20} = 'Posterior Lesion (4.5<Loes; G4)';
+st_abstract{2,20} = 'pre-Mean';
+st_abstract{2,21} = 'pre-STD';
+st_abstract{2,22} = 'post-Mean';
+st_abstract{2,23} = 'post-STD';
+st_abstract{2,24} = 'slope-Mean';
+st_abstract{2,25} = 'slope-STD';
+st_abstract{1,26} = 'Wilcoxon rank sum tests (p-values)';
+st_abstract{2,26} = 'pre-G1vsG2';
+st_abstract{2,27} = 'pre-G1vsG3';
+st_abstract{2,28} = 'pre-G1vsG4';
+st_abstract{2,29} = 'slope-G1vsG2';
+st_abstract{2,30} = 'slope-G1vsG3';
+st_abstract{2,31} = 'slope-G1vsG4';
+st_abstract{1,32} = 'ANCOVA (p-values; counfouding factor = dMRI voxel volume)';
+st_abstract{2,32} = 'pre-G1vsG2';
+st_abstract{2,33} = 'pre-G1vsG3';
+st_abstract{2,34} = 'pre-G1vsG4';
+st_abstract{2,35} = 'slope-G1vsG2';
+st_abstract{2,36} = 'slope-G1vsG3';
+st_abstract{2,37} = 'slope-G1vsG4';
 
-
+st_partcorr(1,2:7) = neuropsych_name_select;
 
 sess1_pos = subnum(selection==1);
 slope=zeros(size(sess1_pos,1),size(data_name_select,2));
+sbplid = 1;
+if strcmp(neuropsych_draw,'Processing Speed')
+    figid = 4501;
+elseif strcmp(neuropsych_draw,'Visual Reasoning')
+    figid = 4601;
+elseif strcmp(neuropsych_draw,'Visual-Motor Integration')
+    figid = 4701;
+elseif strcmp(neuropsych_draw,'Verbal Reasoning')
+    figid = 4201;
+elseif strcmp(neuropsych_draw,'Working Memory')
+    figid = 4301;
+elseif strcmp(neuropsych_draw,'Fine Motor Dexterity')
+    figid = 4401;
+end
+
+if include_advanced == 0 
+    figid = figid + 1000;
+end
+if strcmp(neuropsych_order,'xpre-ypre') 
+    figid = figid + 20;
+end
+if strcmp(neuropsych_order,'trend') 
+    figid = figid + 40;
+end
+if draw_predict_corr == 1
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 1200])
+end
+
+boxid = 1;
+box_g1 = [];
+box_g2 = [];
+box_name = cell(1,1);
+rdid = 1;
+rd_g1 = [];
+rd_g2 = [];
+rd_name = cell(1,1);
+mdid = 1;
+md_g1 = [];
+md_g2 = [];
+md_name = cell(1,1);
+adid = 1;
+ad_g1 = [];
+ad_g2 = [];
+ad_name = cell(1,1);
+
 for idx = 1:size(data_name_select,2)
     pos = find(strcmp(data_name,data_name_select{1,idx})==1);
     data_select_pos(idx,1) = pos;
     
-    if strcmp(data_name_select{1,idx},'FA12-jhu-wm')
+    if strcmp(data_name_select{1,idx},'CerebralWMVol') || strcmp(data_name_select{1,idx},'CerebralWhiteMatterVol')
+        st_abstract{2+idx,1} = 'Cerebral White Matter Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'CortexVol')
+        st_abstract{2+idx,1} = 'Cortex Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'Total Ventricles')
+        st_abstract{2+idx,1} = 'Total Ventricles Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'Thalamus')
+        st_abstract{2+idx,1} = 'Thalamus Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'BGG')
+        st_abstract{2+idx,1} = 'Basal Ganglia Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'BGG+Thalamus')
+        st_abstract{2+idx,1} = 'Basal Ganglia + Thalamus Volume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'thickness-avg')
+        st_abstract{2+idx,1} = 'Cortical Thickness [mm]';
+    elseif strcmp(data_name_select{1,idx},'LesionVol')
+        st_abstract{2+idx,1} = 'LesionVolume [% of Cranial Volume]';
+    elseif strcmp(data_name_select{1,idx},'Lesion Volume [mm^3]')
+        st_abstract{2+idx,1} = 'Lesion Volume [mm^3]';
+    elseif strcmp(data_name_select{1,idx},'LoesScore')
+        st_abstract{2+idx,1} = 'Loes Score';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-wm')
         st_abstract{2+idx,1} = 'FA - JHU - White Matter';
     elseif strcmp(data_name_select{1,idx},'FA12-jhu-cc')
         st_abstract{2+idx,1} = 'FA - JHU - Corpus Callosum';
@@ -434,16 +571,114 @@ for idx = 1:size(data_name_select,2)
         st_abstract{2+idx,1} = 'FA - JHU - Anterior Corona Radiata';
     elseif strcmp(data_name_select{1,idx},'FA12-jhu-retroIC')
         st_abstract{2+idx,1} = 'FA - JHU - Retrolenticular Part of Internal Capsule';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-wm')
+        st_abstract{2+idx,1} = 'MD - JHU - White Matter';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-cc')
+        st_abstract{2+idx,1} = 'MD - JHU - Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-5')
+        st_abstract{2+idx,1} = 'MD - JHU - Splenium of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-3')
+        st_abstract{2+idx,1} = 'MD - JHU - Genu of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-4')
+        st_abstract{2+idx,1} = 'MD - JHU - Body of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-cst')
+        st_abstract{2+idx,1} = 'MD - JHU - Corticospinal Tract';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-aCR')
+        st_abstract{2+idx,1} = 'MD - JHU - Anterior Corona Radiata';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-retroIC')
+        st_abstract{2+idx,1} = 'MD - JHU - Retrolenticular Part of Internal Capsule';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-wm')
+        st_abstract{2+idx,1} = 'RD - JHU - White Matter';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-cc')
+        st_abstract{2+idx,1} = 'RD - JHU - Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-5')
+        st_abstract{2+idx,1} = 'RD - JHU - Splenium of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-3')
+        st_abstract{2+idx,1} = 'RD - JHU - Genu of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-4')
+        st_abstract{2+idx,1} = 'RD - JHU - Body of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-cst')
+        st_abstract{2+idx,1} = 'RD - JHU - Corticospinal Tract';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-aCR')
+        st_abstract{2+idx,1} = 'RD - JHU - Anterior Corona Radiata';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-retroIC')
+        st_abstract{2+idx,1} = 'RD - JHU - Retrolenticular Part of Internal Capsule';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-wm')
+        st_abstract{2+idx,1} = 'AD - JHU - White Matter';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-cc')
+        st_abstract{2+idx,1} = 'AD - JHU - Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-5')
+        st_abstract{2+idx,1} = 'AD - JHU - Splenium of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-3')
+        st_abstract{2+idx,1} = 'AD - JHU - Genu of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-4')
+        st_abstract{2+idx,1} = 'AD - JHU - Body of Corpus Callosum';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-cst')
+        st_abstract{2+idx,1} = 'AD - JHU - Corticospinal Tract';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-aCR')
+        st_abstract{2+idx,1} = 'AD - JHU - Anterior Corona Radiata';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-retroIC')
+        st_abstract{2+idx,1} = 'AD - JHU - Retrolenticular Part of Internal Capsule';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-wmNOles')
+        st_abstract{2+idx,1} = 'FA - JHU - White Matter without Lesion';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-ccNOles')
+        st_abstract{2+idx,1} = 'FA - JHU - Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-5NOles')
+        st_abstract{2+idx,1} = 'FA - JHU - Splenium of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-3NOles')
+        st_abstract{2+idx,1} = 'FA - JHU - Genu of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-4NOles')
+        st_abstract{2+idx,1} = 'FA - JHU - Body of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'FA12-jhu-cstNOles')
+        st_abstract{2+idx,1} = 'FA - JHU - Corticospinal Tract without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-wmNOles')
+        st_abstract{2+idx,1} = 'MD - JHU - White Matter without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-ccNOles')
+        st_abstract{2+idx,1} = 'MD - JHU - Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-5NOles')
+        st_abstract{2+idx,1} = 'MD - JHU - Splenium of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-3NOles')
+        st_abstract{2+idx,1} = 'MD - JHU - Genu of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-4NOles')
+        st_abstract{2+idx,1} = 'MD - JHU - Body of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'MD12-jhu-cstNOles')
+        st_abstract{2+idx,1} = 'MD - JHU - Corticospinal Tract without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-wmNOles')
+        st_abstract{2+idx,1} = 'AD - JHU - White Matter without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-ccNOles')
+        st_abstract{2+idx,1} = 'AD - JHU - Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-5NOles')
+        st_abstract{2+idx,1} = 'AD - JHU - Splenium of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-3NOles')
+        st_abstract{2+idx,1} = 'AD - JHU - Genu of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-4NOles')
+        st_abstract{2+idx,1} = 'AD - JHU - Body of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'AD12-jhu-cstNOles')
+        st_abstract{2+idx,1} = 'AD - JHU - Corticospinal Tract without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-wmNOles')
+        st_abstract{2+idx,1} = 'RD - JHU - White Matter without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-ccNOles')
+        st_abstract{2+idx,1} = 'RD - JHU - Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-5NOles')
+        st_abstract{2+idx,1} = 'RD - JHU - Splenium of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-3NOles')
+        st_abstract{2+idx,1} = 'RD - JHU - Genu of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-4NOles')
+        st_abstract{2+idx,1} = 'RD - JHU - Body of Corpus Callosum without Lesion';
+    elseif strcmp(data_name_select{1,idx},'RD12-jhu-cstNOles')
+        st_abstract{2+idx,1} = 'RD - JHU - Corticospinal Tract without Lesion';
+    else
+        st_abstract{2+idx,1} = data_name_select{1,idx};
     end
     
-    [vec1,vec1_time,vec1_slope,vec1_stat] = extract_measures(data(:,pos),type2020,selection,1,bmttime);
-    [vec2,vec2_time,vec2_slope,vec2_stat] = extract_measures(data(:,pos),type2020,selection,2,bmttime);
-    [vec3,vec3_time,vec3_slope,vec3_stat] = extract_measures(data(:,pos),type2020,selection,3,bmttime);
-    [vec4,vec4_time,vec4_slope,vec4_stat] = extract_measures(data(:,pos),type2020,selection,4,bmttime);
-    [vec5,vec5_time,vec5_slope,vec5_stat] = extract_measures(data(:,pos),type2020,selection,5,bmttime);
-    [vec6,vec6_time,vec6_slope,vec6_stat] = extract_measures(data(:,pos),type2020,selection,6,bmttime);
-    [vec7,vec7_time,vec7_slope,vec7_stat] = extract_measures(data(:,pos),type2020,selection,7,bmttime);
-    
+    [vec1,vec1_slope,vec1_stat,vec1_info] = extract_measures(data(:,pos),type2020,selection,1,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec2,vec2_slope,vec2_stat,vec2_info] = extract_measures(data(:,pos),type2020,selection,2,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec3,vec3_slope,vec3_stat,vec3_info] = extract_measures(data(:,pos),type2020,selection,3,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec4,vec4_slope,vec4_stat,vec4_info] = extract_measures(data(:,pos),type2020,selection,4,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec5,vec5_slope,vec5_stat,vec5_info] = extract_measures(data(:,pos),type2020,selection,5,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec6,vec6_slope,vec6_stat,vec6_info] = extract_measures(data(:,pos),type2020,selection,6,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+    [vec7,vec7_slope,vec7_stat,vec7_info] = extract_measures(data(:,pos),type2020,selection,7,bmttime,loes,dmri12voxelvol,slow_progression,[psi percept vmi verbal wmi fmdex],neuropsych_name_select,ageatscan);
+
     cell_slope{1,1} = vec1_slope;
     cell_slope{2,1} = vec2_slope;
     cell_slope{3,1} = vec3_slope;
@@ -451,6 +686,13 @@ for idx = 1:size(data_name_select,2)
     cell_slope{5,1} = vec5_slope;
     cell_slope{6,1} = vec6_slope;
     cell_slope{7,1} = vec7_slope;
+    
+    positive_slope1(idx,1) = sum(vec1_slope>0);
+    positive_slope2(idx,1) = sum(vec2_slope>0);
+    positive_slope234567(idx,1) = sum([vec2_slope; vec3_slope; vec4_slope; vec5_slope; vec6_slope; vec7_slope]>0);
+    positive_slope1(idx,2) = positive_slope1(idx,1)/size(vec1_slope,1);
+    positive_slope2(idx,2) = positive_slope2(idx,1)/size(vec2_slope,1);
+    positive_slope234567(idx,2) = positive_slope234567(idx,1)/size([vec2_slope; vec3_slope; vec4_slope; vec5_slope; vec6_slope; vec7_slope],1);
     
     vec23 = [vec2; vec3];
     vec23_slope = [vec2_slope; vec3_slope];
@@ -466,12 +708,41 @@ for idx = 1:size(data_name_select,2)
     vec45_stat(3,1) = mean(vec45_slope,'omitnan');
     vec45_stat(3,2) = std(vec45_slope,'omitnan');
     
-    p_abstract(1,1) = ranksum(vec1(:,1),vec23(:,1));
-    p_abstract(1,2) = ranksum(vec1(:,1),vec45(:,1));
-    p_abstract(2,1) = ranksum(vec1_slope,vec23_slope);
-    p_abstract(2,2) = ranksum(vec1_slope,vec45_slope);
+    p_abstract(1,1) = ranksum(vec1(:,1),vec2(:,1));
+    p_abstract(1,2) = ranksum(vec1(:,1),vec23(:,1));
+    p_abstract(2,1) = ranksum(vec1(:,1),vec45(:,1));
+    p_abstract(2,2) = ranksum(vec1_slope,vec2_slope);
+    p_abstract(3,1) = ranksum(vec1_slope,vec23_slope);
+    p_abstract(3,2) = ranksum(vec1_slope,vec45_slope);
     
-    pom=[vec1_stat; vec23_stat; vec45_stat; p_abstract]';
+    if strcmp(st_abstract{2+idx,1}(1:2),'FA') || strcmp(st_abstract{2+idx,1}(1:2),'MD') || strcmp(st_abstract{2+idx,1}(1:2),'AD') || strcmp(st_abstract{2+idx,1}(1:2),'RD')
+%         p_ancova(1,1) = eval_ancova(vec1,vec2,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'pre');
+%         p_ancova(1,2) = eval_ancova(vec1,vec23,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'pre');
+%         p_ancova(2,1) = eval_ancova(vec1,vec45,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'pre');
+%         p_ancova(2,2) = eval_ancova(vec1_slope,vec2_slope,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'slope');
+%         p_ancova(3,1) = eval_ancova(vec1_slope,vec23_slope,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'slope');
+%         p_ancova(3,2) = eval_ancova(vec1_slope,vec45_slope,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'slope');
+        p_ancova(1,1) = eval_ancova_with_age(vec1,vec2,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'pre',vec1_info.age,vec2_info.age);
+        p_ancova(1,2) = eval_ancova_with_age(vec1,vec23,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'pre',vec1_info.age,[vec2_info.age; vec3_info.age]);
+        p_ancova(2,1) = eval_ancova_with_age(vec1,vec45,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'pre',vec1_info.age,[vec4_info.age; vec5_info.age]);
+        p_ancova(2,2) = eval_ancova_with_age(vec1_slope,vec2_slope,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'slope',vec1_info.age,vec2_info.age);
+        p_ancova(3,1) = eval_ancova_with_age(vec1_slope,vec23_slope,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'slope',vec1_info.age,[vec2_info.age; vec3_info.age]);
+        p_ancova(3,2) = eval_ancova_with_age(vec1_slope,vec45_slope,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'slope',vec1_info.age,[vec4_info.age; vec5_info.age]);
+    else
+        p_ancova(1,1) = eval_ancova(vec1,vec2,vec1_info.age,vec2_info.age,'pre');
+        p_ancova(1,2) = eval_ancova(vec1,vec23,vec1_info.age,[vec2_info.age; vec3_info.age],'pre');
+        p_ancova(2,1) = eval_ancova(vec1,vec45,vec1_info.age,[vec4_info.age; vec5_info.age],'pre');
+        p_ancova(2,2) = eval_ancova(vec1_slope,vec2_slope,vec1_info.age,vec2_info.age,'slope');
+        p_ancova(3,1) = eval_ancova(vec1_slope,vec23_slope,vec1_info.age,[vec2_info.age; vec3_info.age],'slope');
+        p_ancova(3,2) = eval_ancova(vec1_slope,vec45_slope,vec1_info.age,[vec4_info.age; vec5_info.age],'slope');
+%         p_ancova = ones(3,2)*1000;
+    end
+    
+    if strcmp(data_name_select{1,idx},'FA12-jhu-5')
+        p_ancova_FAsplenium = eval_ancova(vec1,vec2,vec1_info.age,vec2_info.age,'pre');
+    end
+    
+    pom=[vec1_stat; vec2_stat; vec23_stat; vec45_stat; p_abstract; p_ancova]';
     pom = pom(:);
     for psx = 1:size(pom,1)
         st_abstract{2+idx,1+psx} = pom(psx);
@@ -481,93 +752,201 @@ for idx = 1:size(data_name_select,2)
     for g = 1:size(cell_slope,1)
         slope = reorder_slope(slope,cell_slope{g,1},subnum,selection,type2020,g,idx,sess1_pos);
     end
+    
+    if draw_predict_corr == 1
+        draw_scatter_corr(neuropsych_draw,neuropsych_order,sbplid,vec1,vec2,vec3,vec4,vec5,vec6,vec7,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,st_abstract{2+idx,1},include_advanced,show_rapid)
+        sbplid = sbplid + 1;
+        if mod(idx,6) == 0       
+            set(gcf, 'color', [1 1 1])
+            set(gcf, 'InvertHardcopy', 'off')
+            pause(0.10)
+            print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    %         export_fig(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-m3.0','-png')
+            pause(0.10)
+            close(h(figid).fig)
+            pause(0.05)
+            if idx < size(data_name_select,2)
+                figid = figid + 1;
+                sbplid = 1;
+
+                h(figid).fig=figure(figid);
+                set(h(figid).fig,'Position',[50 50 2100 1200])
+            end
+        end       
+    elseif draw_boxplot_dist == 1
+        if strcmp(data_name_select{1,idx},'FA12-jhu-5')
+            box_g1(:,boxid) = vec1(:,1);
+            box_g2(:,boxid) = vec2(:,1);
+            box_name{1,boxid} = st_abstract{2+idx,1};
+            if contains(box_name{1,boxid},'JHU')
+                box_name{1,boxid}(3:10) = [];
+            end
+            boxid = boxid + 1;
+        end
+        if contains(data_name_select{1,idx},'FA') && ~strcmp(data_name_select{1,idx},'FA12-jhu-cc') && ~strcmp(data_name_select{1,idx},'FA12-jhu-ccNOles') && ~strcmp(data_name_select{1,idx},'FA12-jhu-cstNOles') && ~contains(data_name_select{1,idx},'NOles')
+            box_g1(:,boxid) = vec1_slope;
+            box_g2(:,boxid) = vec2_slope;
+            box_name{1,boxid} = st_abstract{2+idx,1};
+            if contains(box_name{1,boxid},'JHU')
+                box_name{1,boxid}(3:10) = [];
+            end
+            box_name{1,boxid} = ['Slope of ' box_name{1,boxid}];
+            boxid = boxid + 1;
+        end
+        if contains(data_name_select{1,idx},'RD') && ~strcmp(data_name_select{1,idx},'RD12-jhu-cc') && ~strcmp(data_name_select{1,idx},'RD12-jhu-ccNOles') && ~strcmp(data_name_select{1,idx},'RD12-jhu-cstNoles') && ~contains(data_name_select{1,idx},'NOles')
+            rd_g1(:,rdid) = vec1_slope;
+            rd_g2(:,rdid) = vec2_slope;
+            rd_name{1,rdid} = st_abstract{2+idx,1};
+            if contains(rd_name{1,rdid},'JHU')
+                rd_name{1,rdid}(3:10) = [];
+            end
+            rd_name{1,rdid} = ['Slope of ' rd_name{1,rdid}];
+            rdid = rdid + 1;
+        end
+        if contains(data_name_select{1,idx},'MD') && ~strcmp(data_name_select{1,idx},'MD12-jhu-cc') && ~strcmp(data_name_select{1,idx},'MD12-jhu-ccNOles') && ~strcmp(data_name_select{1,idx},'MD12-jhu-cstNOles') && ~contains(data_name_select{1,idx},'NOles')
+            md_g1(:,mdid) = vec1_slope;
+            md_g2(:,mdid) = vec2_slope;
+            md_name{1,mdid} = st_abstract{2+idx,1};
+            if contains(md_name{1,mdid},'JHU')
+                md_name{1,mdid}(3:10) = [];
+            end
+            md_name{1,mdid} = ['Slope of ' md_name{1,mdid}];
+            mdid = mdid + 1;
+        end
+        if contains(data_name_select{1,idx},'AD') && ~strcmp(data_name_select{1,idx},'AD12-jhu-cc') && ~strcmp(data_name_select{1,idx},'AD12-jhu-ccNOles') && ~strcmp(data_name_select{1,idx},'AD12-jhu-cstNOles') && ~contains(data_name_select{1,idx},'NOles')
+            ad_g1(:,adid) = vec1_slope;
+            ad_g2(:,adid) = vec2_slope;
+            ad_name{1,adid} = st_abstract{2+idx,1};
+            if contains(ad_name{1,adid},'JHU')
+                ad_name{1,adid}(3:10) = [];
+            end
+            ad_name{1,adid} = ['Slope of ' ad_name{1,adid}];
+            adid = adid + 1;
+        end
+    end
+    
+    
+    [rho(idx,:), p_rho(idx,:)] = estimate_partial_corr(vec2,vec3,vec4,vec5,vec6,vec7,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,include_advanced);
+    st_partcorr{1+idx,1} = st_abstract{2+idx,1};
+    tpos=find((st_partcorr{1+idx,1}=='[')==1);
+    if tpos>0
+        st_partcorr{1+idx,1}(tpos-1:end) = [];
+    end
+    tpos=find((st_partcorr{1+idx,1}=='-')==1);
+    if sum(tpos>0)
+        st_partcorr{1+idx,1}(tpos(1):tpos(2)+1) = [];
+    end
+    for nind = 1:size(rho,2)
+        st_partcorr{1+idx,1+nind} = rho(idx,nind);
+    end
+end
+st_abstract = stat_table_correction(st_abstract);
+st_manuscript = stat_table_selection(st_abstract,positive_slope1,positive_slope2,positive_slope234567,data_name_select);
+pBH_rho = ones(size(p_rho));
+for cl = 1:size(p_rho,2)
+    [~,~,~,pBH_rho(:,cl)]=fdr_bh(p_rho(:,cl),0.05,'pdep');
 end
 
-xdata=data(selection==1,strcmp(data_name,'FA12-jhu-5'));
-ydata=slope(:,strcmp(slope_name,'FA12-jhu-5-slope'));
-zdata=data(selection==1,strcmp(data_name,'FA12-jhu-3'));
-gdata=slope(:,strcmp(slope_name,'FA12-jhu-3-slope'));
-grp = type2020(selection==1);
-h(21).fig = figure(21);
-set(h(21).fig,'Position',[50 50 600 500])
-scatter3(xdata(grp==1),ydata(grp==1),zdata(grp==1),850, 'b.')
-hold on
-scatter3(xdata(grp==2),ydata(grp==2),zdata(grp==2),850, 'y.')
-scatter3(xdata(grp==3),ydata(grp==3),zdata(grp==3),850, 'g.')
-scatter3(xdata(grp==4),ydata(grp==4),zdata(grp==4),850, '.','MarkerEdgeColor',[0.6 0.6 0.6])
-scatter3(xdata(grp==5),ydata(grp==5),zdata(grp==5),850, 'r.')
-scatter3(xdata(grp==6),ydata(grp==6),zdata(grp==6),850, 'm.')
-scatter3(xdata(grp==7),ydata(grp==7),zdata(grp==7),850, 'c.')
-hold off
-xlabel('FA Splenium')
-ylabel('FA Splenium Slope')
-zlabel('FA Genu')
-grid on
-set(gca,'FontSize',14,'LineWidth',2)
+st_partcorr_thr = st_partcorr;
+st_partcorr_thrBH = st_partcorr;
+for rw = 1:size(p_rho,1)
+    for cl = 1:size(p_rho,2)
+            if p_rho(rw,cl)>=0.05
+                st_partcorr_thr{rw+1,cl+1}=0;
+            end
+            if pBH_rho(rw,cl)>=0.05
+                st_partcorr_thrBH{rw+1,cl+1}=0;
+            end
+    end
+end
 
-h(22).fig = figure(22);
-set(h(22).fig,'Position',[50 50 600 500])
-scatter(xdata(grp==1),ydata(grp==1),850, 'b.')
-hold on
-scatter(xdata(grp==2),ydata(grp==2),850, 'y.')
-scatter(xdata(grp==3),ydata(grp==3),850, 'g.')
-scatter(xdata(grp==4),ydata(grp==4),850, '.','MarkerEdgeColor',[0.6 0.6 0.6])
-scatter(xdata(grp==5),ydata(grp==5),850, 'r.')
-scatter(xdata(grp==6),ydata(grp==6),850, 'm.')
-scatter(xdata(grp==7),ydata(grp==7),850, 'c.')
-hold off
-xlabel('FA Splenium')
-ylabel('FA Splenium Slope')
-grid on
-set(gca,'FontSize',14,'LineWidth',2)
+if draw_boxplot_dist == 1
+    figid = 7111;
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 500])
+    for sbplid = 1:size(box_g1,2)
+        if sbplid == 1
+            draw_zero = 0;
+        else
+            draw_zero = 1;
+        end
+        subplot(1,6,sbplid)
+        draw_boxplot_distribution(box_g1(:,box_order(1,sbplid)),box_g2(:,box_order(1,sbplid)),box_name{1,box_order(1,sbplid)},draw_zero)
+    end
+    pause(0.10)
+    print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    pause(0.10)
+    close(h(figid).fig)
+    pause(0.05)
+    
+    figid = 7112;
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 500])
+    for sbplid = 1:size(rd_g1,2)
+        subplot(1,6,sbplid)
+        draw_boxplot_distribution(rd_g1(:,rd_order(1,sbplid)),rd_g2(:,rd_order(1,sbplid)),rd_name{1,rd_order(1,sbplid)},1)
+    end
+    pause(0.10)
+    print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    pause(0.10)
+    close(h(figid).fig)
+    pause(0.05)
+    
+    figid = 7113;
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 500])
+    for sbplid = 1:size(md_g1,2)
+        subplot(1,6,sbplid)
+        draw_boxplot_distribution(md_g1(:,md_order(1,sbplid)),md_g2(:,md_order(1,sbplid)),md_name{1,md_order(1,sbplid)},1)
+    end
+    pause(0.10)
+    print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    pause(0.10)
+    close(h(figid).fig)
+    pause(0.05)
+    
+    figid = 7114;
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 500])
+    for sbplid = 1:size(ad_g1,2)
+        subplot(1,6,sbplid)
+        draw_boxplot_distribution(ad_g1(:,ad_order(1,sbplid)),ad_g2(:,ad_order(1,sbplid)),ad_name{1,ad_order(1,sbplid)},1)
+    end
+    pause(0.10)
+    print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    pause(0.10)
+    close(h(figid).fig)
+    pause(0.05)
+end
 
-h(23).fig = figure(23);
-set(h(23).fig,'Position',[50 50 600 500])
-scatter(xdata(grp==1),zdata(grp==1),850, 'b.')
-hold on
-scatter(xdata(grp==2),zdata(grp==2),850, 'y.')
-scatter(xdata(grp==3),zdata(grp==3),850, 'g.')
-scatter(xdata(grp==4),zdata(grp==4),850, '.','MarkerEdgeColor',[0.6 0.6 0.6])
-scatter(xdata(grp==5),zdata(grp==5),850, 'r.')
-scatter(xdata(grp==6),zdata(grp==6),850, 'm.')
-scatter(xdata(grp==7),zdata(grp==7),850, 'c.')
-hold off
-xlabel('FA Splenium')
-ylabel('FA Genu')
-grid on
-set(gca,'FontSize',14,'LineWidth',2)
 
-h(24).fig = figure(24);
-set(h(24).fig,'Position',[50 50 600 500])
-scatter(zdata(grp==1),gdata(grp==1),850, 'b.')
-hold on
-scatter(zdata(grp==2),gdata(grp==2),850, 'y.')
-scatter(zdata(grp==3),gdata(grp==3),850, 'g.')
-scatter(zdata(grp==4),gdata(grp==4),850, '.','MarkerEdgeColor',[0.6 0.6 0.6])
-scatter(zdata(grp==5),gdata(grp==5),850, 'r.')
-scatter(zdata(grp==6),gdata(grp==6),850, 'm.')
-scatter(zdata(grp==7),gdata(grp==7),850, 'c.')
-hold off
-xlabel('FA Genu')
-ylabel('FA Genu Slope')
-grid on
-set(gca,'FontSize',14,'LineWidth',2)
 
-h(25).fig = figure(25);
-set(h(25).fig,'Position',[50 50 600 500])
-scatter(ydata(grp==1),gdata(grp==1),850, 'b.')
-hold on
-scatter(ydata(grp==2),gdata(grp==2),850, 'y.')
-scatter(ydata(grp==3),gdata(grp==3),850, 'g.')
-scatter(ydata(grp==4),gdata(grp==4),850, '.','MarkerEdgeColor',[0.6 0.6 0.6])
-scatter(ydata(grp==5),gdata(grp==5),850, 'r.')
-scatter(ydata(grp==6),gdata(grp==6),850, 'm.')
-scatter(ydata(grp==7),gdata(grp==7),850, 'c.')
-hold off
-xlabel('FA Splenium Slope')
-ylabel('FA Genu Slope')
-grid on
-set(gca,'FontSize',14,'LineWidth',2)
+figid = 4801;
+if include_advanced == 0 
+    figid = figid + 1000;
+end
+if strcmp(neuropsych_order,'xpre-ypre') 
+    figid = figid + 20;
+end
+if strcmp(neuropsych_order,'trend') 
+    figid = figid + 40;
+end
+h(figid).fig=figure(figid);
+set(h(figid).fig,'Position',[50 50 2100 1200])
+draw_scatter_corr('Processing Speed',neuropsych_order,1,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+draw_scatter_corr('Visual Reasoning',neuropsych_order,2,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+draw_scatter_corr('Visual-Motor Integration',neuropsych_order,3,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+draw_scatter_corr('Verbal Reasoning',neuropsych_order,4,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+draw_scatter_corr('Working Memory',neuropsych_order,5,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+draw_scatter_corr('Fine Motor Dexterity',neuropsych_order,6,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+set(gcf, 'color', [1 1 1])
+set(gcf, 'InvertHardcopy', 'off')
+pause(0.10)
+print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+pause(0.10)
+close(h(figid).fig)
+pause(0.05)
+        
 
 
 st{1,3}='1prevs2+3+4+5preBMT';
@@ -857,6 +1236,7 @@ btwscans = [];
 btwscanshc = [];
 corr_dloes_k=zeros(size(data,2),2);
 for vr = 1:size(data,2)
+% for vr = 316:size(data,2)
     dt1pre = data(type==1 & selection==1,vr);
     dt1post = data(type==1 & selection==2,vr);
     dt25pre = data(type>1 & selection==1,vr);
@@ -1348,7 +1728,7 @@ for vr = 1:size(data,2)
 %         end
     end
     hold off
-    xlabel('BMT time [days]')
+    xlabel('Time from treatment [days]')
     if vr <= 3
         ylabel('Cortical thickness [mm]')
     elseif vr==4 || vr==5
@@ -1359,10 +1739,26 @@ for vr = 1:size(data,2)
         ylabel('Volume [% of Cranial Volume]')
     elseif vr == 73
         ylabel('Volume [mm^3]')
-    elseif vr>=74 && vr<=173
+    elseif vr>=74 && vr<=194
         ylabel('Fractional anisotropy')
-    elseif vr>=174 && vr<=273
+    elseif vr>=195 && vr<=315
         ylabel('Mean diffusivity [*10^{-9}m^{2}/s]')
+    elseif vr>=316 && vr<=335
+        ylabel('Axial diffusivity [*10^{-9}m^{2}/s]')
+    elseif vr>=336 && vr<=355
+        ylabel('Radial diffusivity [*10^{-9}m^{2}/s]')
+    elseif vr==356
+        ylabel('Loes Score')
+    elseif vr>=357 && vr<=359
+        ylabel('Volume [% of Brain Volume without Ventricles]')
+    elseif vr==362
+        ylabel('Visual Reasoning')
+    elseif vr==364
+        ylabel('Processing Speed')
+    elseif vr==369
+        ylabel('Visual-Motor Integration')    
+    else
+        ylabel(data_name{1,vr})
     end
     if ~isempty(x) && ~isempty(y)
         [~, st{vr+2,24}] = ttest(x,y);
@@ -1502,6 +1898,20 @@ for vr = 1:size(data,2)
             st{vr+2,1} = ['FS ' num2str(psl) ': ' fs_labels{psl2,2}];
         end
         title(st{vr+2,1})
+    elseif strcmp(data_name{1,vr},'FSIQ')
+        title('Full Scale IQ')
+    elseif strcmp(data_name{1,vr},'VERBAL')
+        title('Verbal Reasoning')
+    elseif strcmp(data_name{1,vr},'PERCEPT')
+        title('Visual Reasoning')
+    elseif strcmp(data_name{1,vr},'WMI')
+        title('Working Memory')
+    elseif strcmp(data_name{1,vr},'PSI')
+        title('Processing Speed')
+    elseif strcmp(data_name{1,vr},'Pegs-Ave')
+        title('Fine Motor Dexterity')
+    elseif strcmp(data_name{1,vr},'WMI')
+        title('Visual-Motor Integration')
     else
         title(data_name{1,vr})
     end
@@ -1543,72 +1953,7 @@ for vr = 1:size(data,2)
         tp = tp(1);
         prg=slow_progression(pos);
         prg=prg(1);
-        if tp==1
-            lns = ':o';
-            clr = [0 0 1];
-            wd = 2;
-            mrksz = 5;
-        elseif tp == 2 && prg==1
-            lns = ':^';
-            clr = [253, 218, 13]/255;
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 2 && prg==0
-            lns = ':x';
-            clr = [253, 218, 13]/255;
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 3 && prg==1
-            lns = ':^';
-            clr = [0 1 0];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 3 && prg==0
-            lns = ':x';
-            clr = [0 1 0];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 6 && prg==1
-            lns = ':^';
-            clr = [1 0 1];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 6 && prg==0
-            lns = ':x';
-            clr = [1 0 1];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 7 && prg==1
-            lns = ':^';
-            clr = [0 1 1];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 7 && prg==0
-            lns = ':x';
-            clr = [0 1 1];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 4 && prg==1
-            lns = ':^';
-            clr = [1 1 1]*0.5;
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 4 && prg==0
-            lns = ':x';
-            clr = [1 1 1]*0.5;
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 5 && prg==1
-            lns = ':^';
-            clr = [1 0 0];
-            wd = 2;
-            mrksz = 7;
-        elseif tp == 5 && prg==0
-            lns = ':x';
-            clr = [1 0 0];
-            wd = 2;
-            mrksz = 7;
-        end
+        [lns,clr,wd,mrksz]=decide_plot_parameters(tp,prg,show_rapid);
         plot(bmttime(pos),data(pos,vr),lns,'Color',clr,'LineWidth',wd,'MarkerSize',mrksz)
         if sum(pos)==2
             xt=bmttime(pos & selection==1);
@@ -1633,26 +1978,39 @@ for vr = 1:size(data,2)
         end
     end
     hold off
-    xlabel('BMT time [days]')
+    xlabel('Time from treatment [days]')
     if vr <= 3
-        ylabel('Cortical thickness [mm]')
+        YLBLgraph='Cortical thickness [mm]';
     elseif vr==4 || vr==5
-        ylabel('???')
+        YLBLgraph='???';
     elseif vr==8 || vr==10
-        ylabel('Volume [% of the ROI]')
+        YLBLgraph='Volume [% of the ROI]';
     elseif (vr>=11 && vr<=72) || vr== 6 || vr==7 || vr==9
-        ylabel('Volume [% of Cranial Volume]')
+        YLBLgraph='Volume [% of Cranial Volume]';
     elseif vr == 73
-        ylabel('Volume [mm^3]')
+        YLBLgraph='Volume [mm^3]';
     elseif vr>=74 && vr<=194
-        ylabel('Fractional anisotropy')
+        YLBLgraph='Fractional anisotropy';
     elseif vr>=195 && vr<=315
-        ylabel('Mean diffusivity [*10^{-9}m^{2}/s]')
-    elseif vr==316
-        ylabel('Loes Score')
-    elseif vr>=317 && vr<=319
-        ylabel('Volume [% of Brain Volume without Ventricles]')
+        YLBLgraph='Mean diffusivity [*10^{-9}m^{2}/s]';
+    elseif vr>=316 && vr<=343
+        YLBLgraph='Axial diffusivity [*10^{-9}m^{2}/s]';
+    elseif vr>=344 && vr<=371
+        YLBLgraph='Radial diffusivity [*10^{-9}m^{2}/s]';
+    elseif vr==372
+        YLBLgraph='Loes Score';
+    elseif vr>=373 && vr<=375
+        YLBLgraph='Volume [% of Brain Volume without Ventricles]';
+    elseif vr==378
+        YLBLgraph='Visual Reasoning';
+    elseif vr==380
+        YLBLgraph='Processing Speed';
+    elseif vr==385
+        YLBLgraph='Visual-Motor Integration';    
+    else
+        YLBLgraph=data_name{1,vr};
     end
+    ylabel(YLBLgraph)
     if ~isempty(x) && ~isempty(y)
         [~, st{vr+2,140}] = ttest(x(tpxy==2),y(tpxy==2));
         [~, st{vr+2,141}] = ttest(x(tpxy==3),y(tpxy==3));
@@ -1727,12 +2085,27 @@ for vr = 1:size(data,2)
 %     text(150,0.97*mx,'PreBMT vs PostBMT','FontSize',12);
 %     text(150,0.94*mx,['p=' num2str(ppostpaired,'%.6f')],'FontSize',12);
     if length(data_name{1,vr})>8 && strcmp(data_name{1,vr}(6:8),'jhu')
-        title(st{vr+2,1})
+        TTLE=st{vr+2,1};
     elseif length(data_name{1,vr})>7 && strcmp(data_name{1,vr}(6:7),'fs')
-        title(st{vr+2,1})
+        TTLE=st{vr+2,1};
+    elseif strcmp(data_name{1,vr},'FSIQ')
+        TTLE='Full Scale IQ';
+    elseif strcmp(data_name{1,vr},'VERBAL')
+        TTLE='Verbal Reasoning';
+    elseif strcmp(data_name{1,vr},'PERCEPT')
+        TTLE='Visual Reasoning';
+    elseif strcmp(data_name{1,vr},'WMI')
+        TTLE='Working Memory';
+    elseif strcmp(data_name{1,vr},'PSI')
+        TTLE='Processing Speed';
+    elseif strcmp(data_name{1,vr},'Pegs-Ave')
+        TTLE='Fine Motor Dexterity';
+    elseif strcmp(data_name{1,vr},'WMI')
+        TTLE='Visual-Motor Integration';
     else
-        title(data_name{1,vr})
+        TTLE=data_name{1,vr};
     end
+    title(TTLE)
     axis([-150 460 mn mx])
     grid on
     set(gca,'FontSize',14,'LineWidth',2)
@@ -1742,9 +2115,22 @@ for vr = 1:size(data,2)
     pause(0.15)
     close(h(2000+vr).fig)
     pause(0.1)
-    disp(vr)
   
     
+    h(12000+vr).fig = figure(12000+vr);
+    set(h(12000+vr).fig,'Position',[50 50 480 500])
+    Yp1 = data(type2020==1 & selection==1,vr);
+    Yp2 = data(type2020==2 & selection==1,vr);
+    Yp3 = data(type2020==3 & selection==1,vr);
+    Yp4 = data(type2020==4 & selection==1,vr);
+    Yp5 = data(type2020==5 & selection==1,vr); 
+    draw_boxplot_distribution_baseline(Yp1,Yp2,Yp3,Yp4,Yp5,YLBLgraph,TTLE)
+    pause(0.15)
+    print(fullfile(save_path,['graph' num2str(12000+vr,'%05.f')]),'-dpng','-r300')
+    pause(0.15)
+    close(h(12000+vr).fig)
+    pause(0.1)
+    disp(vr)
 end
 
 time_stat(1,1) = mean(btwscanshc);
@@ -1932,7 +2318,7 @@ legend('No lesion',...
     'Advanced disease',...
     'Slow progression',...
     'Rapid progression',...
-    'BMT day')
+    'Treatment day')
 set(gca,'FontSize',18,'LineWidth',2)
 axis([6 12 5 10])
 axis off
@@ -1947,38 +2333,62 @@ h(1).fig = figure(1);
 set(h(1).fig,'Position',[50 50 600 500])
 plot([-5 5],[3 3],':o','Color',[0 0 1],'LineWidth',3,'MarkerSize',7)
 hold on
-plot([-5 5],[3 3],':','Color',[253, 218, 13]/255,'LineWidth',3,'MarkerSize',10)
-plot([-5 5],[3 3],':','Color',[0 1 0],'LineWidth',3,'MarkerSize',10)
-plot([-5 5],[3 3],':','Color',[1 0 1],'LineWidth',3,'MarkerSize',10)
-plot([-5 5],[3 3],':','Color',[0 1 1],'LineWidth',3,'MarkerSize',10)
-plot([-5 5],[3 3],':','Color',[1 1 1]*0.5,'LineWidth',3,'MarkerSize',10)
-plot([-5 5],[3 3],':','Color',[1 0 0],'LineWidth',3,'MarkerSize',10)
-scatter(-0,3,200,'k^','LineWidth',3)
-scatter(-0,3,200,'kx','LineWidth',3)
-plot([0 0],[mn mx],'k-.','LineWidth',3)
+if show_rapid == 1
+    plot([-5 5],[3 3],':','Color',[253, 218, 13]/255,'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':','Color',[0 1 0],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':','Color',[1 0 1],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':','Color',[0 1 1],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':','Color',[1 1 1]*0.5,'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':','Color',[1 0 0],'LineWidth',3,'MarkerSize',10)
+    scatter(-0,3,200,'k^','LineWidth',3)
+    scatter(-0,3,200,'kx','LineWidth',3)
+else
+    plot([-5 5],[3 3],':^','Color',[253, 218, 13]/255,'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':x','Color',[0 1 0],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':d','Color',[1 0 1],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':s','Color',[0 1 1],'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':p','Color',[1 1 1]*0.5,'LineWidth',3,'MarkerSize',10)
+    plot([-5 5],[3 3],':v','Color',[1 0 0],'LineWidth',3,'MarkerSize',10)
+end
+plot([0 0],[3 3],'k-.','LineWidth',3)
 hold off
-legend('No lesion',...
-    '0 < Loes score \leq 2; posterior lesion',...
-    '2 < Loes score \leq 4.5; posterior lesion',...
-    '2 < Loes score \leq 4.5; atypical lesion',...
-    '2 < Loes score \leq 4.5; frontal lesion',...
-    '4.5 < Loes score < 9; posterior lesion',...
-    '9 \leq Loes score; posterior lesion',...
-    'Slow progression',...
-    'Rapid progression',...
-    'BMT day')
+if show_rapid == 1
+    legend('Loes 0, no lesion, no treatment',...
+        'Loes 0.5-2; posterior',...
+        'Loes 2.5-4.5; posterior',...
+        'Loes 2.5-4.5; atypical',...
+        'Loes 2.5-4.5; frontal',...
+        'Loes 5-8.5; posterior',...
+        'Loes \geq 9; posterior',...
+        'Slow progression',...
+        'Rapid progression',...
+        'Treatment day')
+else
+    legend('Loes 0, no lesion, no treatment',...
+        'Loes 0.5-2; posterior',...
+        'Loes 2.5-4.5; posterior',...
+        'Loes 2.5-4.5; atypical',...
+        'Loes 2.5-4.5; frontal',...
+        'Loes 5-8.5; posterior',...
+        'Loes \geq 9; posterior',...
+        'Treatment day')
+end
 set(gca,'FontSize',18,'LineWidth',2)
 axis([6 12 5 10])
 axis off
 pause(0.15)
-print(fullfile(save_path,['00000_legend2020']),'-dpng','-r300')
+if show_rapid == 1
+    print(fullfile(save_path,['00000_legend2020']),'-dpng','-r300')
+else
+    print(fullfile(save_path,['00000_legend2020_noprogress']),'-dpng','-r300')
+end
 pause(0.15)
 close(h(1).fig)
 pause(0.1)
 
 
 
-function [vec1,vec1_time,vec1_slope,vec1_stat] = extract_measures(vec,type2020,selection,grp,bmttime)
+function [vec1,vec1_slope,vec1_stat,vec1_info] = extract_measures(vec,type2020,selection,grp,bmttime,loes,dmrivoxelvol,slow_progression,neuropsych,neuropsych_name,age)
     vec1(:,1) = vec(type2020==grp & selection==1);
     vec1(:,2) = vec(type2020==grp & selection==2);
     vec1_time(:,1) = bmttime(type2020==grp & selection==1);
@@ -1986,13 +2396,40 @@ function [vec1,vec1_time,vec1_slope,vec1_stat] = extract_measures(vec,type2020,s
     vec1_slope = zeros(size(vec1,1),1);
     for psx = 1:size(vec1,1)
         kk = polyfit(vec1_time(psx,:),vec1(psx,:),1);
-        vec1_slope(psx,1)=kk(1);
+        vec1_slope(psx,1)=kk(1)*365.25;
     end
+    
+    lscore(:,1) = loes(type2020==grp & selection==1);
+    lscore(:,2) = loes(type2020==grp & selection==2);
+    
+    vxvol(:,1) = dmrivoxelvol(type2020==grp & selection==1);
+    vxvol(:,2) = dmrivoxelvol(type2020==grp & selection==2);
+    
+    slprg(:,1) = slow_progression(type2020==grp & selection==1);
+    slprg(:,2) = slow_progression(type2020==grp & selection==2);
+    
+    tp2020(:,1) = type2020(type2020==grp & selection==1);
+    tp2020(:,2) = type2020(type2020==grp & selection==2);
+    
+    neupsch(:,:,1) = neuropsych(type2020==grp & selection==1,:);
+    neupsch(:,:,2) = neuropsych(type2020==grp & selection==2,:);
+    
+    ag(:,1) = age(type2020==grp & selection==1);
+    ag(:,2) = age(type2020==grp & selection==2);
     
     vec1_stat = mean(vec1,'omitnan')';
     vec1_stat(:,2) = std(vec1,'omitnan')';
     vec1_stat(3,1) = mean(vec1_slope,'omitnan');
     vec1_stat(3,2) = std(vec1_slope,'omitnan');
+    
+    vec1_info.age = ag;
+    vec1_info.loes = lscore;
+    vec1_info.dmrivoxelvol = vxvol;
+    vec1_info.slow_progression = slprg;
+    vec1_info.type2020 = tp2020;
+    vec1_info.time = vec1_time;
+    vec1_info.neuropsych = neupsch;
+    vec1_info.neuropsych_name = neuropsych_name;
 end
 
 
@@ -2002,4 +2439,895 @@ function slope = reorder_slope(slope,vec_slope,subnum,selection,type,grp,idx,ses
         rx = sess_pos==type_pos(sbx,1);
         slope(rx,idx) = vec_slope(sbx,1);
     end
+end
+
+function p_ancova = eval_ancova(vec1,vec2,confounder1,confounder2,measure_type)
+    group = [zeros(size(vec1,1),1); ones(size(vec2,1),1)];
+    if strcmp(measure_type,'pre')
+        confounder = [confounder1(:,1); confounder2(:,1)];
+    elseif strcmp(measure_type,'slope')
+        confounder = [mean(confounder1,2); mean(confounder2,2)];
+    end
+    p_tmp = anovan([vec1(:,1);vec2(:,1)],{group,confounder},'Continuous',2,'varnames',{'Group','confounder'},'display','off');
+    p_ancova= p_tmp(1);
+end
+
+function p_ancova = eval_ancova_with_age(vec1,vec2,confounder1,confounder2,measure_type,age1,age2)
+    group = [zeros(size(vec1,1),1); ones(size(vec2,1),1)];
+    if strcmp(measure_type,'pre')
+        confounder = [confounder1(:,1); confounder2(:,1)];
+        age = [age1(:,1); age2(:,1)];
+    elseif strcmp(measure_type,'slope')
+        confounder = [mean(confounder1,2); mean(confounder2,2)];
+        age = [mean(age1,2); mean(age2,2)];
+    end
+    p_tmp = anovan([vec1(:,1);vec2(:,1)],{group,confounder,age},'Continuous',[2 3],'varnames',{'Group','Confounder','Age'},'display','off');
+    p_ancova= p_tmp(1);
+end
+
+function [lns,clr,wd,mrksz]=decide_plot_parameters(tp,prg,show_rapid)
+    if show_rapid == 1
+        if tp==1
+            lns = ':o';
+            clr = [0 0 1];
+            wd = 2;
+            mrksz = 5;
+        elseif tp == 2 && prg==1
+            lns = ':^';
+            clr = [253, 218, 13]/255;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 2 && prg==0
+            lns = ':x';
+            clr = [253, 218, 13]/255;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 3 && prg==1
+            lns = ':^';
+            clr = [0 1 0];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 3 && prg==0
+            lns = ':x';
+            clr = [0 1 0];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 6 && prg==1
+            lns = ':^';
+            clr = [1 0 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 6 && prg==0
+            lns = ':x';
+            clr = [1 0 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 7 && prg==1
+            lns = ':^';
+            clr = [0 1 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 7 && prg==0
+            lns = ':x';
+            clr = [0 1 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 4 && prg==1
+            lns = ':^';
+            clr = [1 1 1]*0.5;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 4 && prg==0
+            lns = ':x';
+            clr = [1 1 1]*0.5;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 5 && prg==1
+            lns = ':^';
+            clr = [1 0 0];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 5 && prg==0
+            lns = ':x';
+            clr = [1 0 0];
+            wd = 2;
+            mrksz = 7;
+        end
+    else
+        if tp==1
+            lns = ':o';
+            clr = [0 0 1];
+            wd = 2;
+            mrksz = 5;
+        elseif tp == 2
+            lns = ':^';
+            clr = [253, 218, 13]/255;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 3 
+            lns = ':x';
+            clr = [0 1 0];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 6
+            lns = ':d';
+            clr = [1 0 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 7
+            lns = ':s';
+            clr = [0 1 1];
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 4
+            lns = ':p';
+            clr = [1 1 1]*0.5;
+            wd = 2;
+            mrksz = 7;
+        elseif tp == 5
+            lns = ':v';
+            clr = [1 0 0];
+            wd = 2;
+            mrksz = 7;
+        end
+    end
+end
+
+
+function draw_scatter_corr(neuropsych_draw,neuropsych_order,sbplid,vec1,vec2,vec3,vec4,vec5,vec6,vec7,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,xlbl,include_advanced,show_rapid)
+    if strcmp(neuropsych_order,'xpre-ypost')
+        xid = 1;
+        yid = 2;
+    elseif strcmp(neuropsych_order,'xpre-ypre')
+        xid = 1;
+        yid = 1;
+    elseif strcmp(neuropsych_order,'trend')
+        xid = [1 2];
+        yid = [1 2];
+    end
+    if contains(neuropsych_order,'xpre')
+        xtrt = 'pre';
+    end
+    if contains(neuropsych_order,'ypre')
+        ytrt = 'pre';
+    end
+    if contains(neuropsych_order,'ypost')
+        ytrt = 'post';
+    end
+    
+    xtick = [];
+    if strcmp(xlbl(1:2),'FA') || strcmp(xlbl(1:2),'MD') || strcmp(xlbl(1:2),'RD') || strcmp(xlbl(1:2),'AD')
+        dti=xlbl(1:2);
+        xlbl = xlbl([1:4 11:end]);
+        if strcmp(dti,'FA')
+            dti_text = 'Fractional Anisotropy';
+            if contains(xlbl,'White') || contains(xlbl,'Corticospinal')
+                step = 0.02;
+            else
+                step = 0.05;
+            end
+            xtick = 0:step:1;
+        elseif strcmp(dti,'MD')
+            dti_text = 'Mean Diffusivity';
+        elseif strcmp(dti,'RD')
+            dti_text = 'Radial Diffusivity';
+        elseif strcmp(dti,'AD')
+            dti_text = 'Axial Diffusivity';
+        end
+        if ~strcmp(dti,'FA')
+            if contains(xlbl,'Splenium')
+                step=0.2;
+            elseif contains(xlbl,'White') || contains(xlbl,'Corticospinal')
+                step=0.05;
+            else
+                step=0.1;
+            end
+            xtick=0:step:3;
+        end           
+    else
+        dti=''; 
+    end
+    if strcmp(xlbl,'Loes Score')
+        xtick=0:2:30;
+    end
+    
+    if include_advanced == 1
+        xdata = [vec1(:,xid); vec2(:,xid); vec3(:,xid); vec4(:,xid); vec5(:,xid); vec6(:,xid); vec7(:,xid)];
+        ydata = squeeze([vec1_info.neuropsych(:,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid);...
+            vec2_info.neuropsych(:,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid);...
+            vec3_info.neuropsych(:,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid);...
+            vec4_info.neuropsych(:,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid);...
+            vec5_info.neuropsych(:,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid);...
+            vec6_info.neuropsych(:,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid);...
+            vec7_info.neuropsych(:,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid)]);
+    else
+        xdata = [vec1(:,xid); vec2(:,xid); vec3(:,xid); vec6(:,xid); vec7(:,xid)];
+        ydata = squeeze([vec1_info.neuropsych(:,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid);...
+            vec2_info.neuropsych(:,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid);...
+            vec3_info.neuropsych(:,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid);...
+            vec6_info.neuropsych(:,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid);...
+            vec7_info.neuropsych(:,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid)]);
+    end
+    
+    if ~strcmp(neuropsych_order,'trend')
+        nonan = ~isnan(xdata) & ~isnan(ydata);
+        xdata = xdata(nonan);
+        ydata = ydata(nonan);
+        [r, p] = corrcoef(xdata,ydata);r=r(1,2);p=p(1,2);
+
+        minx=min(xdata);
+        maxx=max(xdata);
+        miny=min(ydata);
+        maxy=max(ydata);
+        x = [minx maxx];
+
+        c = polyfit(xdata,ydata,1);
+        y = c(1)*x + c(2);
+
+        subplot(2,3,sbplid)
+        plot(x,y,'k-.','LineWidth',5)
+        hold on
+        if show_rapid == 1 
+            plot(vec2(vec2_info.slow_progression(:,xid)==1,xid),vec2_info.neuropsych(vec2_info.slow_progression(:,yid)==1,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[253, 218, 13]/255,'LineWidth',4,'MarkerSize',18)
+            plot(vec2(vec2_info.slow_progression(:,xid)==0,xid),vec2_info.neuropsych(vec2_info.slow_progression(:,yid)==0,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[253, 218, 13]/255,'LineWidth',4,'MarkerSize',18)
+            plot(vec3(vec3_info.slow_progression(:,xid)==1,xid),vec3_info.neuropsych(vec3_info.slow_progression(:,yid)==1,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[0 1 0],'LineWidth',4,'MarkerSize',18)
+            plot(vec3(vec3_info.slow_progression(:,xid)==0,xid),vec3_info.neuropsych(vec3_info.slow_progression(:,yid)==0,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[0 1 0],'LineWidth',4,'MarkerSize',18)
+            if include_advanced == 1
+                plot(vec4(vec4_info.slow_progression(:,xid)==1,xid),vec4_info.neuropsych(vec4_info.slow_progression(:,yid)==1,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[1 1 1]*0.5,'LineWidth',4,'MarkerSize',18)
+                plot(vec4(vec4_info.slow_progression(:,xid)==0,xid),vec4_info.neuropsych(vec4_info.slow_progression(:,yid)==0,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[1 1 1]*0.5,'LineWidth',4,'MarkerSize',18)
+                plot(vec5(vec5_info.slow_progression(:,xid)==1,xid),vec5_info.neuropsych(vec5_info.slow_progression(:,yid)==1,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[1 0 0],'LineWidth',4,'MarkerSize',18)
+                plot(vec5(vec5_info.slow_progression(:,xid)==0,xid),vec5_info.neuropsych(vec5_info.slow_progression(:,yid)==0,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[1 0 0],'LineWidth',4,'MarkerSize',18)
+            end
+            plot(vec6(vec6_info.slow_progression(:,xid)==1,xid),vec6_info.neuropsych(vec6_info.slow_progression(:,yid)==1,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[1 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec6(vec6_info.slow_progression(:,xid)==0,xid),vec6_info.neuropsych(vec6_info.slow_progression(:,yid)==0,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[1 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec7(vec7_info.slow_progression(:,xid)==1,xid),vec7_info.neuropsych(vec7_info.slow_progression(:,yid)==1,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[0 1 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec7(vec7_info.slow_progression(:,xid)==0,xid),vec7_info.neuropsych(vec7_info.slow_progression(:,yid)==0,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[0 1 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec1(vec1_info.slow_progression(:,xid)==1,xid),vec1_info.neuropsych(vec1_info.slow_progression(:,yid)==1,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[0 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec1(vec1_info.slow_progression(:,xid)==0,xid),vec1_info.neuropsych(vec1_info.slow_progression(:,yid)==0,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[0 0 1],'LineWidth',4,'MarkerSize',18)
+        else
+            plot(vec2(vec2_info.slow_progression(:,xid)==1,xid),vec2_info.neuropsych(vec2_info.slow_progression(:,yid)==1,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[253, 218, 13]/255,'LineWidth',4,'MarkerSize',18)
+            plot(vec2(vec2_info.slow_progression(:,xid)==0,xid),vec2_info.neuropsych(vec2_info.slow_progression(:,yid)==0,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid),'^','Color',[253, 218, 13]/255,'LineWidth',4,'MarkerSize',18)
+            plot(vec3(vec3_info.slow_progression(:,xid)==1,xid),vec3_info.neuropsych(vec3_info.slow_progression(:,yid)==1,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[0 1 0],'LineWidth',4,'MarkerSize',18)
+            plot(vec3(vec3_info.slow_progression(:,xid)==0,xid),vec3_info.neuropsych(vec3_info.slow_progression(:,yid)==0,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid),'x','Color',[0 1 0],'LineWidth',4,'MarkerSize',18)
+            if include_advanced == 1
+                plot(vec4(vec4_info.slow_progression(:,xid)==1,xid),vec4_info.neuropsych(vec4_info.slow_progression(:,yid)==1,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid),'p','Color',[1 1 1]*0.5,'LineWidth',4,'MarkerSize',18)
+                plot(vec4(vec4_info.slow_progression(:,xid)==0,xid),vec4_info.neuropsych(vec4_info.slow_progression(:,yid)==0,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid),'p','Color',[1 1 1]*0.5,'LineWidth',4,'MarkerSize',18)
+                plot(vec5(vec5_info.slow_progression(:,xid)==1,xid),vec5_info.neuropsych(vec5_info.slow_progression(:,yid)==1,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid),'v','Color',[1 0 0],'LineWidth',4,'MarkerSize',18)
+                plot(vec5(vec5_info.slow_progression(:,xid)==0,xid),vec5_info.neuropsych(vec5_info.slow_progression(:,yid)==0,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid),'v','Color',[1 0 0],'LineWidth',4,'MarkerSize',18)
+            end
+            plot(vec6(vec6_info.slow_progression(:,xid)==1,xid),vec6_info.neuropsych(vec6_info.slow_progression(:,yid)==1,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid),'d','Color',[1 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec6(vec6_info.slow_progression(:,xid)==0,xid),vec6_info.neuropsych(vec6_info.slow_progression(:,yid)==0,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid),'d','Color',[1 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec7(vec7_info.slow_progression(:,xid)==1,xid),vec7_info.neuropsych(vec7_info.slow_progression(:,yid)==1,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid),'s','Color',[0 1 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec7(vec7_info.slow_progression(:,xid)==0,xid),vec7_info.neuropsych(vec7_info.slow_progression(:,yid)==0,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid),'s','Color',[0 1 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec1(vec1_info.slow_progression(:,xid)==1,xid),vec1_info.neuropsych(vec1_info.slow_progression(:,yid)==1,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid),'o','Color',[0 0 1],'LineWidth',4,'MarkerSize',18)
+            plot(vec1(vec1_info.slow_progression(:,xid)==0,xid),vec1_info.neuropsych(vec1_info.slow_progression(:,yid)==0,strcmp(vec1_info.neuropsych_name,neuropsych_draw),yid),'o','Color',[0 0 1],'LineWidth',4,'MarkerSize',18)
+        end
+        hold off
+        
+        if ~isempty(dti) && sbplid == 2
+            title({['Correlation between ' xtrt '-treatment ' dti_text ' and ' ytrt '-treatment ' neuropsych_draw],' '})
+        elseif strcmp(xlbl,'Cerebral White Matter Volume [% of Cranial Volume]') && sbplid == 2
+            title({['Correlation between ' xtrt '-treatment cerebral morphology and ' ytrt '-treatment ' neuropsych_draw],' '})
+        elseif strcmp(xlbl,'Loes Score') && sbplid == 2
+            title({['Correlation between ' xtrt '-treatment ' xlbl ' and ' ytrt '-treatment Neuropsychological Testing'],' '})
+        end
+        
+    else
+        minx = min(xdata(:));
+        maxx = max(xdata(:));
+        miny = min(ydata(:));
+        maxy = max(ydata(:));
+        
+        xdata_mean = mean(xdata,2,'omitnan');
+        ydata_mean = mean(ydata,2,'omitnan');
+        
+        nonan = ~isnan(xdata_mean) & ~isnan(ydata_mean);
+        xdata_mean = xdata_mean(nonan);
+        ydata_mean = ydata_mean(nonan);
+        
+        [r, p] = corrcoef(xdata_mean,ydata_mean);r=r(1,2);p=p(1,2);
+        
+        x = [minx maxx];
+
+        c = polyfit(xdata_mean,ydata_mean,1);
+        y = c(1)*x + c(2);
+        
+        subplot(2,3,sbplid)
+        plot(x,y,'k-.','LineWidth',5)
+        hold on
+        plot(vec2(1,xid),squeeze(vec2_info.neuropsych(1,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[253, 218, 13]/255,'LineWidth',3)
+        plot(vec1(:,1),vec1_info.neuropsych(:,strcmp(vec1_info.neuropsych_name,neuropsych_draw),1),'o','Color',[0 0 1],'LineWidth',3,'MarkerSize',10)
+        for sb = 2:size(vec2,1)
+            plot(vec2(sb,xid),squeeze(vec2_info.neuropsych(sb,strcmp(vec2_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[253, 218, 13]/255,'LineWidth',3)
+        end
+        for sb = 1:size(vec3,1)
+            plot(vec3(sb,xid),squeeze(vec3_info.neuropsych(sb,strcmp(vec3_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[0 1 0],'LineWidth',3)
+        end
+        if include_advanced == 1
+            for sb = 1:size(vec4,1)
+                plot(vec4(sb,xid),squeeze(vec4_info.neuropsych(sb,strcmp(vec4_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[1 1 1]*0.5,'LineWidth',3)
+            end
+            for sb = 1:size(vec5,1)
+                plot(vec5(sb,xid),squeeze(vec5_info.neuropsych(sb,strcmp(vec5_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[1 0 0],'LineWidth',3)
+            end
+        end
+        for sb = 1:size(vec6,1)
+            plot(vec6(sb,xid),squeeze(vec6_info.neuropsych(sb,strcmp(vec6_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[1 0 1],'LineWidth',3)
+        end
+        for sb = 1:size(vec7,1)
+            plot(vec7(sb,xid),squeeze(vec7_info.neuropsych(sb,strcmp(vec7_info.neuropsych_name,neuropsych_draw),yid)),':','Color',[0 1 1],'LineWidth',3)
+        end
+        plot(vec2(:,2),vec2_info.neuropsych(:,strcmp(vec2_info.neuropsych_name,neuropsych_draw),2),'^','Color',[253, 218, 13]/255,'LineWidth',3,'MarkerSize',10)
+        plot(vec3(:,2),vec3_info.neuropsych(:,strcmp(vec3_info.neuropsych_name,neuropsych_draw),2),'^','Color',[0 1 0],'LineWidth',3,'MarkerSize',10)
+        if include_advanced == 1
+            plot(vec4(:,2),vec4_info.neuropsych(:,strcmp(vec4_info.neuropsych_name,neuropsych_draw),2),'^','Color',[1 1 1]*0.5,'LineWidth',3,'MarkerSize',10)
+            plot(vec5(:,2),vec5_info.neuropsych(:,strcmp(vec5_info.neuropsych_name,neuropsych_draw),2),'^','Color',[1 0 0],'LineWidth',3,'MarkerSize',10)
+        end
+        plot(vec6(:,2),vec6_info.neuropsych(:,strcmp(vec6_info.neuropsych_name,neuropsych_draw),2),'^','Color',[1 0 1],'LineWidth',3,'MarkerSize',10)
+        plot(vec7(:,2),vec7_info.neuropsych(:,strcmp(vec7_info.neuropsych_name,neuropsych_draw),2),'^','Color',[0 1 1],'LineWidth',3,'MarkerSize',10)
+        hold off
+    end
+    axis([minx maxx miny maxy])
+    xlabel(xlbl)
+    
+    if strcmp(xlbl,'Loes Score') || sbplid == 1 || sbplid == 4
+        ylabel(neuropsych_draw)
+    end 
+    
+    if r(1)>0
+        if miny>140
+            coefy1 = 1.025;
+        elseif maxy>110 && miny>40
+            coefy1 = 1.10;
+        elseif maxy>100 && miny>5
+            coefy1 = 1.60;
+        else
+            coefy1 = 1.05;
+        end
+    elseif r(1)<=0
+        if maxy<5
+            coefy1 = 0.10;
+        elseif miny>25
+            coefy1 = 0.10;
+        elseif maxy>100 && miny>5
+            coefy1 = 0.60;
+        else
+            coefy1 = 0.08;
+        end
+    else
+        coefy1 = 0.05;
+    end
+    if p(1) < 0.05
+        set(gca,'Color',[255 255 240]/255)
+        if r(1)>0
+            txty = coefy1*miny;
+        else
+            txty = maxy - coefy1*miny;
+        end
+        if p(1) < 0.0001
+            text(0.99*maxx,txty,['r=' num2str(r(1),'%.3f') '; p<0.0001'],'HorizontalAlignment','right','FontWeight','bold','FontSize',20)
+        else
+            text(0.99*maxx,txty,['r=' num2str(r(1),'%.3f') '; p=' num2str(p(1),'%.4f')],'HorizontalAlignment','right','FontWeight','bold','FontSize',20)
+        end
+    end
+    
+    grid on
+    if ~isempty(xtick)
+        set(gca,'XTick',xtick,'XTickLabel',xtick)
+    end
+    set(gca,'LineWidth',3,'FontSize',20)
+    pause(0.01)
+end
+
+function [rho, p_rho] = estimate_partial_corr(vec2,vec3,vec4,vec5,vec6,vec7,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,include_advanced)
+    rho = zeros(1,size(vec2_info.neuropsych,2));
+    p_rho = zeros(1,size(vec2_info.neuropsych,2));
+    for nind = 1:size(vec2_info.neuropsych,2)
+        if include_advanced == 1
+            xpre = [vec2(:,1); vec3(:,1); vec4(:,1); vec5(:,1); vec6(:,1); vec7(:,1)];
+            ndata = squeeze([vec2_info.neuropsych(:,nind,:);...
+                vec3_info.neuropsych(:,nind,:);...
+                vec4_info.neuropsych(:,nind,:);...
+                vec5_info.neuropsych(:,nind,:);...
+                vec6_info.neuropsych(:,nind,:);...
+                vec7_info.neuropsych(:,nind,:)]);
+        else
+            xpre = [vec2(:,1); vec3(:,1); vec6(:,1); vec7(:,1)];
+            ndata = squeeze([vec2_info.neuropsych(:,nind,:);...
+                vec3_info.neuropsych(:,nind,:);...
+                vec6_info.neuropsych(:,nind,:);...
+                vec7_info.neuropsych(:,nind,:)]);
+        end
+        
+        [r,p] = partialcorr([xpre, ndata(:,2)],ndata(:,1),'Rows','pairwise');
+        rho(1,nind) = r(1,2);
+        p_rho(1,nind) = p(1,2);
+    end
+end
+
+function st = stat_table_correction(st)
+    vol_begin = find(strcmp(st(:,1),'Cortex Volume [% of Cranial Volume]')==1);
+    vol_end = find(strcmp(st(:,1),'Basal Ganglia Volume [% of Cranial Volume]')==1);
+    thick_begin = find(strcmp(st(:,1),'Cortical Thickness [mm]')==1);
+    dti_begin = find(strcmp(st(:,1),'FA - JHU - White Matter')==1);
+    dti_end = find(strcmp(st(:,1),'AD - JHU - Corticospinal Tract')==1);
+    dtinolesion_begin = find(strcmp(st(:,1),'FA - JHU - White Matter without Lesion')==1);
+    dtinolesion_end = find(strcmp(st(:,1),'AD - JHU - Corticospinal Tract without Lesion')==1);
+    
+    pre_begin = find(strcmp(st(2,:),'pre-G1vsG2')==1);
+    pre_end = find(strcmp(st(2,:),'pre-G1vsG4')==1);
+    pre_wilcox_begin = pre_begin(1);
+    pre_wilcox_end = pre_end(1);
+    pre_ancova_begin = pre_begin(2);
+    pre_ancova_end = pre_end(2);
+    
+    slope_begin = find(strcmp(st(2,:),'slope-G1vsG2')==1);
+    slope_end = find(strcmp(st(2,:),'slope-G1vsG4')==1);
+    slope_wilcox_begin = slope_begin(1);
+    slope_wilcox_end = slope_end(1);
+    slope_ancova_begin = slope_begin(2);
+    slope_ancova_end = slope_end(2);
+    
+    st = correct_table(st,vol_begin,vol_end,pre_wilcox_begin,pre_wilcox_end);
+    st = correct_table(st,vol_begin,vol_end,slope_wilcox_begin,slope_wilcox_end);
+    
+    st = correct_table(st,thick_begin,thick_begin,pre_wilcox_begin,pre_wilcox_end);
+    st = correct_table(st,thick_begin,thick_begin,slope_wilcox_begin,slope_wilcox_end);
+    
+    st = correct_table(st,dti_begin,dti_end,pre_wilcox_begin,pre_wilcox_end);
+    st = correct_table(st,dti_begin,dti_end,slope_wilcox_begin,slope_wilcox_end);
+    st = correct_table(st,dti_begin,dti_end,pre_ancova_begin,pre_ancova_end);
+    st = correct_table(st,dti_begin,dti_end,slope_ancova_begin,slope_ancova_end);
+    
+    st = correct_table(st,dtinolesion_begin,dtinolesion_end,pre_wilcox_begin,pre_wilcox_end);
+    st = correct_table(st,dtinolesion_begin,dtinolesion_end,slope_wilcox_begin,slope_wilcox_end);
+    st = correct_table(st,dtinolesion_begin,dtinolesion_end,pre_ancova_begin,pre_ancova_end);
+    st = correct_table(st,dtinolesion_begin,dtinolesion_end,slope_ancova_begin,slope_ancova_end);
+end
+
+function st = correct_table(st,var_begin,var_end,test_begin,test_end)
+    rows_vec = var_begin:var_end;
+    cols_vec = test_begin:test_end;
+
+    p = cell2mat(st(rows_vec,cols_vec));
+    [~,~,~,p_bh]=fdr_bh(p,0.05,'pdep');
+     
+    for row = 1:size(p_bh,1)
+        for col = 1:size(p_bh,2)
+            st{rows_vec(row),cols_vec(col)} = p_bh(row,col);
+        end
+    end    
+end
+
+function st_select = stat_table_selection(st,positive_slope1,positive_slope2,positive_slope234567,data_name_select)
+    st_select{1,3} = 'No Lesion';
+    st_select{1,7} = 'Posterior Lesion (0<Loes<=2)';
+    st_select{1,11} = 'ANCOVA';
+    st_select{1,13} = 'Slope > 0';
+    st_select{2,1} = 'Variable';
+    st_select{2,2} = 'Region of Interest';
+    st_select{2,3} = 'baseline';
+    st_select{2,5} = 'follow-up';
+    st_select{2,7} = 'baseline';
+    st_select{2,9} = 'follow-up';
+    st_select{2,11} = 'baseline';
+    st_select{2,12} = 'slope';
+    st_select{2,13} = 'No Lesion (14)';
+    st_select{2,15} = 'Posterior 0<Loes<=2 (13)';
+    st_select{2,17} = 'cALD (38)';
+    st_select{3,1} = 'Volume [% of Cranial Volume]';
+    st_select{5,1} = 'Fractional Anisotropy';
+    st_select{10,1} = 'Axial Diffusivity [*10^-9 m^2/s]';
+    st_select{15,1} = 'Radial Diffusivity [*10^-9 m^2/s]';
+    st_select{20,1} = 'Mean Diffusivity [*10^-9 m^2/s]';
+    st_select{25,1} = 'Fractional Anisotropy';
+    st_select{30,1} = 'Axial Diffusivity [*10^-9 m^2/s]';
+    st_select{35,1} = 'Radial Diffusivity [*10^-9 m^2/s]';
+    st_select{40,1} = 'Mean Diffusivity [*10^-9 m^2/s]';
+    
+    row = 3;
+    st_select{row,2} = 'Cortex';
+    pos = strcmp(st(:,1),'Cortex Volume [% of Cranial Volume]');
+    keyword = 'CortexVol';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 4;
+    st_select{row,2} = 'Cerebral White Matter';
+    pos = strcmp(st(:,1),'Cerebral White Matter Volume [% of Cranial Volume]');
+    keyword = 'CerebralWhiteMatterVol';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 5;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'FA - JHU - White Matter');
+    keyword = 'FA12-jhu-wm';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 6;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Splenium of Corpus Callosum');
+    keyword = 'FA12-jhu-5';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 7;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Genu of Corpus Callosum');
+    keyword = 'FA12-jhu-3';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 8;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Body of Corpus Callosum');
+    keyword = 'FA12-jhu-4';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 9;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'FA - JHU - Corticospinal Tract');
+    keyword = 'FA12-jhu-cst';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 10;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'AD - JHU - White Matter');
+    keyword = 'AD12-jhu-wm';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 11;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Splenium of Corpus Callosum');
+    keyword = 'AD12-jhu-5';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 12;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Genu of Corpus Callosum');
+    keyword = 'AD12-jhu-3';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 13;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Body of Corpus Callosum');
+    keyword = 'AD12-jhu-4';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 14;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'AD - JHU - Corticospinal Tract');
+    keyword = 'AD12-jhu-cst';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);    
+    
+    row = 15;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'RD - JHU - White Matter');
+    keyword = 'RD12-jhu-wm';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 16;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Splenium of Corpus Callosum');
+    keyword = 'RD12-jhu-5';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 17;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Genu of Corpus Callosum');
+    keyword = 'RD12-jhu-3';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 18;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Body of Corpus Callosum');
+    keyword = 'RD12-jhu-4';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 19;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'RD - JHU - Corticospinal Tract');
+    keyword = 'RD12-jhu-cst';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);    
+    
+    row = 20;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'MD - JHU - White Matter');
+    keyword = 'MD12-jhu-wm';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 21;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Splenium of Corpus Callosum');
+    keyword = 'MD12-jhu-5';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 22;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Genu of Corpus Callosum');
+    keyword = 'MD12-jhu-3';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 23;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Body of Corpus Callosum');
+    keyword = 'MD12-jhu-4';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 24;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'MD - JHU - Corticospinal Tract');
+    keyword = 'MD12-jhu-cst';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    % ROIs excluding voxels with lesion
+    row = 25;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'FA - JHU - White Matter without Lesion');
+    keyword = 'FA12-jhu-wmNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 26;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Splenium of Corpus Callosum without Lesion');
+    keyword = 'FA12-jhu-5NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 27;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Genu of Corpus Callosum without Lesion');
+    keyword = 'FA12-jhu-3NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 28;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'FA - JHU - Body of Corpus Callosum without Lesion');
+    keyword = 'FA12-jhu-4NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 29;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'FA - JHU - Corticospinal Tract without Lesion');
+    keyword = 'FA12-jhu-cstNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword); 
+    
+    row = 30;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'AD - JHU - White Matter without Lesion');
+    keyword = 'AD12-jhu-wmNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 31;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Splenium of Corpus Callosum without Lesion');
+    keyword = 'AD12-jhu-5NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 32;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Genu of Corpus Callosum without Lesion');
+    keyword = 'AD12-jhu-3NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 33;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'AD - JHU - Body of Corpus Callosum without Lesion');
+    keyword = 'AD12-jhu-4NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 34;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'AD - JHU - Corticospinal Tract without Lesion');
+    keyword = 'AD12-jhu-cstNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword); 
+    
+    row = 35;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'RD - JHU - White Matter without Lesion');
+    keyword = 'RD12-jhu-wmNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 36;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Splenium of Corpus Callosum without Lesion');
+    keyword = 'RD12-jhu-5NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 37;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Genu of Corpus Callosum without Lesion');
+    keyword = 'RD12-jhu-3NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 38;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'RD - JHU - Body of Corpus Callosum without Lesion');
+    keyword = 'RD12-jhu-4NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 39;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'RD - JHU - Corticospinal Tract without Lesion');
+    keyword = 'RD12-jhu-cstNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keyword);
+    
+    row = 40;
+    st_select{row,2} = 'White Matter';
+    pos = strcmp(st(:,1),'MD - JHU - White Matter without Lesion');
+    keywoMD = 'MD12-jhu-wmNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keywoMD);
+    
+    row = 41;
+    st_select{row,2} = 'Splenium of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Splenium of Corpus Callosum without Lesion');
+    keywoMD = 'MD12-jhu-5NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keywoMD);
+    
+    row = 42;
+    st_select{row,2} = 'Genu of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Genu of Corpus Callosum without Lesion');
+    keywoMD = 'MD12-jhu-3NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keywoMD);
+    
+    row = 43;
+    st_select{row,2} = 'Body of Corpus Callosum';
+    pos = strcmp(st(:,1),'MD - JHU - Body of Corpus Callosum without Lesion');
+    keywoMD = 'MD12-jhu-4NOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keywoMD);
+    
+    row = 44;
+    st_select{row,2} = 'Corticospinal Tract';
+    pos = strcmp(st(:,1),'MD - JHU - Corticospinal Tract without Lesion');
+    keywoMD = 'MD12-jhu-cstNOles';
+    st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope234567,data_name_select,keywoMD);
+end
+
+function st_select = fill_table(st_select,st,pos,row,positive_slope1,positive_slope2,positive_slope3,var_name,keyword)
+    st_select{row,3} = st{pos,2};
+    st_select{row,4} = st{pos,3};
+    st_select{row,5} = st{pos,4};
+    st_select{row,6} = st{pos,5};
+    st_select{row,7} = st{pos,8};
+    st_select{row,8} = st{pos,9};
+    st_select{row,9} = st{pos,10};
+    st_select{row,10} = st{pos,11};
+%     st_select{row,11} = st{pos,26};
+%     st_select{row,12} = st{pos,29};
+    st_select{row,11} = st{pos,32};
+    st_select{row,12} = st{pos,35};
+    
+    pos=strcmp(var_name,keyword);
+    m1=positive_slope1(pos,:);
+    m2=positive_slope2(pos,:);
+    m3=positive_slope3(pos,:);
+    
+    st_select{row,13} = m1(1,1);
+    st_select{row,14} = round(100*m1(1,2));
+    st_select{row,15} = m2(1,1);
+    st_select{row,16} = round(100*m2(1,2));
+    st_select{row,17} = m3(1,1);
+    st_select{row,18} = round(100*m3(1,2));
+end
+
+function draw_boxplot_distribution(Yp1,Yp2,ylbl,draw_zero)
+
+    Yp1_Cinterval = quantile(Yp1,[0.025 0.25 0.50 0.75 0.975]);
+    Yp2_Cinterval = quantile(Yp2,[0.025 0.25 0.50 0.75 0.975]);
+    
+    plot([0.27 0.73],[Yp1_Cinterval(2) Yp1_Cinterval(2)],'k','LineWidth',3);
+    hold on
+    if draw_zero==1
+        plot([-5 5],[0 0],'r-.','LineWidth',3)
+    end
+    plot([0.27 0.73],[Yp1_Cinterval(4) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.27 0.27],[Yp1_Cinterval(2) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.73 0.73],[Yp1_Cinterval(2) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.5 0.5],[Yp1_Cinterval(1) Yp1_Cinterval(2)],'k','LineWidth',3);
+    plot([0.48 0.52],[Yp1_Cinterval(1) Yp1_Cinterval(1)],'k','LineWidth',3);
+    plot([0.5 0.5],[Yp1_Cinterval(4) Yp1_Cinterval(5)],'k','LineWidth',3);
+    plot([0.48 0.52],[Yp1_Cinterval(5) Yp1_Cinterval(5)],'k','LineWidth',3);
+    plot([0.77 1.23],[Yp2_Cinterval(2) Yp2_Cinterval(2)],'k','LineWidth',3);
+    plot([0.77 1.23],[Yp2_Cinterval(4) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([0.77 0.77],[Yp2_Cinterval(2) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([1.23 1.23],[Yp2_Cinterval(2) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([1.0 1.0],[Yp2_Cinterval(1) Yp2_Cinterval(2)],'k','LineWidth',3);
+    plot([0.98 1.02],[Yp2_Cinterval(1) Yp2_Cinterval(1)],'k','LineWidth',3);
+    plot([1.0 1.0],[Yp2_Cinterval(4) Yp2_Cinterval(5)],'k','LineWidth',3);
+    plot([0.98 1.02],[Yp2_Cinterval(5) Yp2_Cinterval(5)],'k','LineWidth',3);
+    H1 = plot([0.27 0.73],[Yp1_Cinterval(3) Yp1_Cinterval(3)],'k-.','LineWidth',3);
+    H2 = plot([0.77 1.23],[Yp2_Cinterval(3) Yp2_Cinterval(3)],'k-.','LineWidth',3);
+    
+    scatter(1*ones(size(Yp1))/2,Yp1,100, 'bo', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'Linewidth',3);
+    scatter(2*ones(size(Yp2))/2,Yp2,100, '^', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'MarkerEdgeColor',[253, 218, 13]/255,'Linewidth',3);
+    hold off
+    xlim([0.2 1.3])
+    grid on
+    ylabel(ylbl)
+    xlabel('Loes score')
+    set(gca,'FontSize',14,'LineWidth',2,...
+        'XTick',0.5:0.5:1,...
+        'XTickLabel',{'0','0.5-2'})
+end
+
+function draw_boxplot_distribution_baseline(Yp1,Yp2,Yp3,Yp4,Yp5,ylbl,ttle)
+
+    Yp1_Cinterval = quantile(Yp1,[0.025 0.25 0.50 0.75 0.975]);
+    Yp2_Cinterval = quantile(Yp2,[0.025 0.25 0.50 0.75 0.975]);
+    Yp3_Cinterval = quantile(Yp3,[0.025 0.25 0.50 0.75 0.975]);
+    Yp4_Cinterval = quantile(Yp4,[0.025 0.25 0.50 0.75 0.975]);
+    Yp5_Cinterval = quantile(Yp5,[0.025 0.25 0.50 0.75 0.975]);
+    
+    plot([0.27 0.73],[Yp1_Cinterval(2) Yp1_Cinterval(2)],'k','LineWidth',3);
+    hold on
+    plot([0.27 0.73],[Yp1_Cinterval(4) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.27 0.27],[Yp1_Cinterval(2) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.73 0.73],[Yp1_Cinterval(2) Yp1_Cinterval(4)],'k','LineWidth',3);
+    plot([0.5 0.5],[Yp1_Cinterval(1) Yp1_Cinterval(2)],'k','LineWidth',3);
+    plot([0.48 0.52],[Yp1_Cinterval(1) Yp1_Cinterval(1)],'k','LineWidth',3);
+    plot([0.5 0.5],[Yp1_Cinterval(4) Yp1_Cinterval(5)],'k','LineWidth',3);
+    plot([0.48 0.52],[Yp1_Cinterval(5) Yp1_Cinterval(5)],'k','LineWidth',3);
+    
+    plot([0.77 1.23],[Yp2_Cinterval(2) Yp2_Cinterval(2)],'k','LineWidth',3);
+    plot([0.77 1.23],[Yp2_Cinterval(4) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([0.77 0.77],[Yp2_Cinterval(2) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([1.23 1.23],[Yp2_Cinterval(2) Yp2_Cinterval(4)],'k','LineWidth',3);
+    plot([1.0 1.0],[Yp2_Cinterval(1) Yp2_Cinterval(2)],'k','LineWidth',3);
+    plot([0.98 1.02],[Yp2_Cinterval(1) Yp2_Cinterval(1)],'k','LineWidth',3);
+    plot([1.0 1.0],[Yp2_Cinterval(4) Yp2_Cinterval(5)],'k','LineWidth',3);
+    plot([0.98 1.02],[Yp2_Cinterval(5) Yp2_Cinterval(5)],'k','LineWidth',3);
+    
+    plot([0.77+0.5 1.23+0.5],[Yp3_Cinterval(2) Yp3_Cinterval(2)],'k','LineWidth',3);
+    plot([0.77+0.5 1.23+0.5],[Yp3_Cinterval(4) Yp3_Cinterval(4)],'k','LineWidth',3);
+    plot([0.77+0.5 0.77+0.5],[Yp3_Cinterval(2) Yp3_Cinterval(4)],'k','LineWidth',3);
+    plot([1.23+0.5 1.23+0.5],[Yp3_Cinterval(2) Yp3_Cinterval(4)],'k','LineWidth',3);
+    plot([1.0+0.5 1.0+0.5],[Yp3_Cinterval(1) Yp3_Cinterval(2)],'k','LineWidth',3);
+    plot([0.98+0.5 1.02+0.5],[Yp3_Cinterval(1) Yp3_Cinterval(1)],'k','LineWidth',3);
+    plot([1.0+0.5 1.0+0.5],[Yp3_Cinterval(4) Yp3_Cinterval(5)],'k','LineWidth',3);
+    plot([0.98+0.5 1.02+0.5],[Yp3_Cinterval(5) Yp3_Cinterval(5)],'k','LineWidth',3);
+    
+    plot([0.77+1.0 1.23+1.0],[Yp4_Cinterval(2) Yp4_Cinterval(2)],'k','LineWidth',3);
+    plot([0.77+1.0 1.23+1.0],[Yp4_Cinterval(4) Yp4_Cinterval(4)],'k','LineWidth',3);
+    plot([0.77+1.0 0.77+1.0],[Yp4_Cinterval(2) Yp4_Cinterval(4)],'k','LineWidth',3);
+    plot([1.23+1.0 1.23+1.0],[Yp4_Cinterval(2) Yp4_Cinterval(4)],'k','LineWidth',3);
+    plot([1.0+1.0 1.0+1.0],[Yp4_Cinterval(1) Yp4_Cinterval(2)],'k','LineWidth',3);
+    plot([0.98+1.0 1.02+1.0],[Yp4_Cinterval(1) Yp4_Cinterval(1)],'k','LineWidth',3);
+    plot([1.0+1.0 1.0+1.0],[Yp4_Cinterval(4) Yp4_Cinterval(5)],'k','LineWidth',3);
+    plot([0.98+1.0 1.02+1.0],[Yp4_Cinterval(5) Yp4_Cinterval(5)],'k','LineWidth',3);
+    
+    plot([0.77+1.5 1.23+1.5],[Yp5_Cinterval(2) Yp5_Cinterval(2)],'k','LineWidth',3);
+    plot([0.77+1.5 1.23+1.5],[Yp5_Cinterval(4) Yp5_Cinterval(4)],'k','LineWidth',3);
+    plot([0.77+1.5 0.77+1.5],[Yp5_Cinterval(2) Yp5_Cinterval(4)],'k','LineWidth',3);
+    plot([1.23+1.5 1.23+1.5],[Yp5_Cinterval(2) Yp5_Cinterval(4)],'k','LineWidth',3);
+    plot([1.0+1.5 1.0+1.5],[Yp5_Cinterval(1) Yp5_Cinterval(2)],'k','LineWidth',3);
+    plot([0.98+1.5 1.02+1.5],[Yp5_Cinterval(1) Yp5_Cinterval(1)],'k','LineWidth',3);
+    plot([1.0+1.5 1.0+1.5],[Yp5_Cinterval(4) Yp5_Cinterval(5)],'k','LineWidth',3);
+    plot([0.98+1.5 1.02+1.5],[Yp5_Cinterval(5) Yp5_Cinterval(5)],'k','LineWidth',3);
+        
+    H1 = plot([0.27 0.73],[Yp1_Cinterval(3) Yp1_Cinterval(3)],'k-.','LineWidth',3);
+    H2 = plot([0.77 1.23],[Yp2_Cinterval(3) Yp2_Cinterval(3)],'k-.','LineWidth',3);
+    H3 = plot([0.77+0.5 1.23+0.5],[Yp3_Cinterval(3) Yp3_Cinterval(3)],'k-.','LineWidth',3);
+    H4 = plot([0.77+1.0 1.23+1.0],[Yp4_Cinterval(3) Yp4_Cinterval(3)],'k-.','LineWidth',3);
+    H5 = plot([0.77+1.5 1.23+1.5],[Yp5_Cinterval(3) Yp5_Cinterval(3)],'k-.','LineWidth',3);
+    
+%     plot(0.5:0.5:2.5,[Yp1_Cinterval(3) Yp2_Cinterval(3) Yp3_Cinterval(3) Yp4_Cinterval(3) Yp5_Cinterval(3)],':','LineWidth',3,'Color',[255,140,0]/255)
+    
+    scatter(1*ones(size(Yp1))/2,Yp1,100, 'bo', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'Linewidth',3);
+    scatter(2*ones(size(Yp2))/2,Yp2,100, '^', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'MarkerEdgeColor',[253, 218, 13]/255,'Linewidth',3);
+    scatter(3*ones(size(Yp3))/2,Yp3,100, 'gx', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'Linewidth',3);
+    scatter(4*ones(size(Yp4))/2,Yp4,100, 'p', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'MarkerEdgeColor',[1 1 1]*0.5,'Linewidth',3);
+    scatter(5*ones(size(Yp5))/2,Yp5,100, 'rv', 'jitter','on', 'jitterAmount', 0.14,'MarkerEdgeAlpha',0.95,'MarkerFaceAlpha',0.95,'Linewidth',3);
+    hold off
+    xlim([0.2 2.8])
+    grid on
+    ylabel(ylbl)
+    xlabel('Loes score')    
+    set(gca,'FontSize',14,'LineWidth',2,...
+        'XTick',0.5:0.5:2.5,...
+        'XTickLabel',{'0','0.5-2','2.5-4.5','5-8.5','9-19'})
+    title(ttle,'FontSize',12)
+    
+    
+%         plot([-5 5],[3 3],':^','Color',[253, 218, 13]/255,'LineWidth',3,'MarkerSize',10)
+%     plot([-5 5],[3 3],':x','Color',[0 1 0],'LineWidth',3,'MarkerSize',10)
+%     plot([-5 5],[3 3],':d','Color',[1 0 1],'LineWidth',3,'MarkerSize',10)
+%     plot([-5 5],[3 3],':s','Color',[0 1 1],'LineWidth',3,'MarkerSize',10)
+%     plot([-5 5],[3 3],':p','Color',[1 1 1]*0.5,'LineWidth',3,'MarkerSize',10)
+%     plot([-5 5],[3 3],':v','Color',[1 0 0],'LineWidth',3,'MarkerSize',10)
 end
