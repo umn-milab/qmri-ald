@@ -31,9 +31,9 @@ for ind = 2:size(raw,1)
         MD12_file = fullfile(result_folder,'dti12_MD');
         AD12_file = fullfile(result_folder,'dti12_L1');
         L212_file = fullfile(result_folder,'dti12_L2');
-        L312_file = fullfile(result_folder,'dti12_L2');
-        aseg_file = fullfile(result_folder,'dmri_aseg');
-        lesion_file = fullfile(result_folder,'dmri_lesion');
+        L312_file = fullfile(result_folder,'dti12_L3');
+        aseg_file = fullfile(result_folder,'dmri_aseg_fnirt');
+        lesion_file = fullfile(result_folder,'dmri_lesion_fnirt');
         dmrires=0;
         asegres=0;
         if isfile([FA12_file '.nii.gz'])

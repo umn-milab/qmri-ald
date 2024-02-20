@@ -48,6 +48,21 @@ if [ -f $NIIFOLDER/dmri_${DIRNUM}dir.nii.gz ];then
             dt=$(date '+%Y/%m/%d %H:%M:%S');
             echo "$dt $SESS: flirt diff-mprage registration done"
         fi
+
+		if [ ! -f $RESULTFOLDER/mprage_FA_fnirt.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: fnirt diff-mprage registration started"
+			fnirt --in=$RESULTFOLDER/dti${DIRNUM}_FA.nii.gz --aff=$RESULTFOLDER/flirt_diff2nat.mat --ref=$MPRFOLDER/mprage_brain.nii.gz --cout=$RESULTFOLDER/fnirt_diff2nat_warp --iout=$RESULTFOLDER/mprage_FA_fnirt.nii.gz --inmask=$RESULTFOLDER/dmri_${DIRNUM}dir_EC_brain_mask.nii.gz --refmask=$MPRFOLDER/mprage_brain_mask.nii.gz --infwhm=4,2,1,1 --reffwhm=2,1,0,0 --interp=spline
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: fnirt diff-mprage registration done"
+		fi
+		if [ ! -f $RESULTFOLDER/fnirt_nat2diff_warp.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Inverse-Warp mprage-diff estimation started"
+			invwarp -w $RESULTFOLDER/fnirt_diff2nat_warp.nii.gz -o $RESULTFOLDER/fnirt_nat2diff_warp.nii.gz -r $MPRFOLDER/mprage_brain.nii.gz
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Inverse-Warp mprage-diff estimation done"
+		fi
         if [ -f $MPRFOLDER/mprage_JHU-ICBM-labels.nii.gz ] && [ ! -f $RESULTFOLDER/dmri_JHU-ICBM-labels.nii.gz ] ;then
             dt=$(date '+%Y/%m/%d %H:%M:%S');
             echo "$dt $SESS: warp atlas to diff started"
@@ -57,10 +72,17 @@ if [ -f $NIIFOLDER/dmri_${DIRNUM}dir.nii.gz ];then
         fi
 		if [ -f $MPRFOLDER/mprage_lesion.nii.gz ] && [ ! -f $RESULTFOLDER/dmri_lesion.nii.gz ];then
 			dt=$(date '+%Y/%m/%d %H:%M:%S');
-            echo "$dt $SESS: warp lesion to diff started"
-            flirt -in $MPRFOLDER/mprage_lesion.nii.gz -ref $RESULTFOLDER/dti${DIRNUM}_FA.nii.gz -applyxfm -init $RESULTFOLDER/flirt_nat2diff.mat -interp nearestneighbour -out $RESULTFOLDER/dmri_lesion.nii.gz
-            dt=$(date '+%Y/%m/%d %H:%M:%S');
-            echo "$dt $SESS: warp lesion to diff done"
+			echo "$dt $SESS: warp lesion to diff started"
+			flirt -in $MPRFOLDER/mprage_lesion.nii.gz -ref $RESULTFOLDER/dti${DIRNUM}_FA.nii.gz -applyxfm -init $RESULTFOLDER/flirt_nat2diff.mat -interp nearestneighbour -out $RESULTFOLDER/dmri_lesion.nii.gz
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: warp lesion to diff done"
+		fi
+		if [ -f $MPRFOLDER/mprage_lesion.nii.gz ] && [ ! -f $RESULTFOLDER/dmri_lesion_fnirt.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Warp fnirt-warp lesion to diff started"
+			applywarp -i $MPRFOLDER/mprage_lesion.nii.gz -r $RESULTFOLDER/dti${DIRNUM}_FA.nii.gz -o $RESULTFOLDER/dmri_lesion_fnirt.nii.gz -w $RESULTFOLDER/fnirt_nat2diff_warp.nii.gz --interp=nn
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Warp fnirt-warp lesion to diff started done"
 		fi
     fi
     if [ ! -f $RESULTFOLDER/diff2jhu_warp.nii.gz ];then
@@ -90,12 +112,33 @@ if [ -f $NIIFOLDER/dmri_${DIRNUM}dir.nii.gz ];then
             dt=$(date '+%Y/%m/%d %H:%M:%S');
             echo "$dt $SESS: flirt diff-freesurfer registration done"
 		fi
+		if [ ! -f $RESULTFOLDER/fs_FA_fnirt.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: fnirt diff-fs registration started"
+			fnirt --in=$RESULTFOLDER/dti${DIRNUM}_FA.nii.gz --aff=$RESULTFOLDER/flirt_diff2fs.mat --ref=$MPRFOLDER/fs_brain.nii.gz --cout=$RESULTFOLDER/fnirt_diff2fs_warp --iout=$RESULTFOLDER/fs_FA_fnirt.nii.gz --inmask=$RESULTFOLDER/dmri_${DIRNUM}dir_EC_brain_mask.nii.gz --refmask=$MPRFOLDER/fs_mask.nii.gz --infwhm=4,2,1,1 --reffwhm=2,1,0,0 --interp=spline
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: fnirt diff-fs registration done"
+		fi
+		if [ ! -f $RESULTFOLDER/fnirt_fs2diff_warp.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Inverse-Warp fs-diff estimation started"
+			invwarp -w $RESULTFOLDER/fnirt_diff2fs_warp.nii.gz -o $RESULTFOLDER/fnirt_fs2diff_warp.nii.gz -r $MPRFOLDER/fs_brain.nii.gz
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Inverse-Warp fs-diff estimation done"
+		fi
 		if [ ! -f $RESULTFOLDER/dmri_aseg.nii.gz ];then
 			dt=$(date '+%Y/%m/%d %H:%M:%S');
             echo "$dt $SESS: warp freesurfer-aseg to diff started"
             flirt -in $MPRFOLDER/fs_aseg.nii.gz -ref $RESULTFOLDER/dti${DIRNUM}_FA.nii.gz -applyxfm -init $RESULTFOLDER/flirt_fs2diff.mat -interp nearestneighbour -out $RESULTFOLDER/dmri_aseg.nii.gz
             dt=$(date '+%Y/%m/%d %H:%M:%S');
             echo "$dt $SESS: warp freesurfer-aseg to diff done"
+		fi
+		if [ ! -f $RESULTFOLDER/dmri_aseg_fnirt.nii.gz ];then
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Warp fnirt-warp aseg to diff started"
+			applywarp -i $MPRFOLDER/fs_aseg.nii.gz -r $RESULTFOLDER/dti${DIRNUM}_FA.nii.gz -o $RESULTFOLDER/dmri_aseg_fnirt.nii.gz -w $RESULTFOLDER/fnirt_fs2diff_warp.nii.gz --interp=nn
+			dt=$(date '+%Y/%m/%d %H:%M:%S');
+			echo "$dt $SESS: Warp fnirt-warp aseg to diff started done"
 		fi
 	fi
 fi

@@ -10,17 +10,17 @@ rd_order = [2:4 1 5];
 md_order = [2:4 1 5];
 ad_order = [2:4 1 5];
 
-draw_predict_corr = 0; % Value 0, 1 or 2
-% neuropsych_draw = 'Processing Speed';
+draw_predict_corr = 1; % Value 0, 1 or 2
+neuropsych_draw = 'Processing Speed';
 % neuropsych_draw = 'Visual Reasoning';
 % neuropsych_draw = 'Visual-Motor Integration';
 % neuropsych_draw = 'Verbal Reasoning';
 % neuropsych_draw = 'Working Memory';
-neuropsych_draw = 'Fine Motor Dexterity';
+% neuropsych_draw = 'Fine Motor Dexterity';
 
-% neuropsych_order = 'xpre-ypost';
+neuropsych_order = 'xpre-ypost';
 % neuropsych_order = 'xpre-ypre';
-neuropsych_order = 'trend';
+% neuropsych_order = 'trend';
 
 include_advanced = 1;
 show_rapid = 0;
