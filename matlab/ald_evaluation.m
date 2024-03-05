@@ -29,10 +29,8 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 clear all; close all;
-data_folder='/home/range1-raid1/labounek/data-on-porto';
-project_folder=fullfile(data_folder,'ALD');
-xls_file = fullfile(project_folder,'results','ALD_20230307_Selection202304.xlsx');
-save_path = '/home/range1-raid1/labounek/data-on-porto/ALD/pictures/20230307/graphs202304';
+xls_file = 'data_pierpont_labounek_2024.xlsx';
+save_path = '~/Pictures/ALD/pictures/graphs';
 
 draw_boxplot_dist = 1;
 box_order = [2:5 1 6];
