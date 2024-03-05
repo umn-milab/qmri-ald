@@ -29,7 +29,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 clear all; close all;
-xls_file = 'data_pierpont_labounek_2024.xlsx';
+xls_file = '../data/data_pierpont_labounek_2024.xlsx';
 save_path = '~/Pictures/ALD/pictures/graphs';
 
 draw_boxplot_dist = 1;
