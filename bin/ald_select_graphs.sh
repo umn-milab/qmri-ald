@@ -1,4 +1,34 @@
 #!/bin/bash
+# The "qmri-ald" program provides automated image-processing pipelines for
+# structural MRI images primarily acquired in pediatric healthy controls
+# and pediatric patients with cerebral adrenoleukodystrophy. The program
+# provides preprocessing, processing, quantitative, and statistical analysis
+# of MRI images such as T1-weighted anatomical scans, diffusion MRI scans
+# utilizing DTI and HARDI protocols or T1-rho and T2-rho scans.
+# 
+# Copyright (C) 2024  Rene Labounek (1,a), Igor Nestrasil (1,b)
+# Medical Imaging Lab (MILab)
+# 
+# 1 Medical Imaging Lab (MILab), Division of Clinical Behavioral Neuroscience,
+#   Department of Pediatrics, University of Minnesota,
+#   Masonic Institute for the Developing Brain,
+#   2025 East River Parkway, Minneapolis, MN 55414, USA
+# a) email: rlaboune@umn.edu
+# b) email: nestr007@umn.edu
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 GRAPHFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD/pictures/20230307/graphs202304
 SELECTIONFOLDER=${GRAPHFOLDER}_manuscript_selection
 
