@@ -38,7 +38,7 @@ rd_order = [2:4 1 5];
 md_order = [2:4 1 5];
 ad_order = [2:4 1 5];
 
-draw_predict_corr = 1; % Value 0, 1 or 2
+draw_predict_corr = 0; % Value 0, 1 or 2
 neuropsych_draw = 'Processing Speed';
 % neuropsych_draw = 'Visual Reasoning';
 % neuropsych_draw = 'Visual-Motor Integration';
@@ -52,6 +52,9 @@ neuropsych_order = 'xpre-ypost';
 
 include_advanced = 1;
 show_rapid = 0;
+
+draw_graphs1set = 0;
+draw_graphs2set = 1;
 
 neuropsych_name_select = {'Processing Speed', 'Visual Reasoning','Visual-Motor Integration','Verbal Reasoning','Working Memory','Fine Motor Dexterity'};
 
@@ -153,11 +156,29 @@ fs_labels={
 [num, txt, raw] = xlsread(xls_file);
 cols = size(raw,2);
 
-subid=unique({raw{2:end,1}}');
+if ~ischar(raw{2,1})
+    column1=cell(0,0);
+    subid=cell(0,0);
+    for ind = 1:size(raw,1)
+        if ind == 1
+            column1{ind,1} = raw{ind,1};
+        else
+            column1{ind,1} = num2str(raw{ind,1});
+        end
+        if ind>1
+            subid{ind-1,1} = num2str(raw{ind,1});
+        end
+        
+    end
+    subid = unique(subid);
+else
+    column1 = {raw{:,1}};
+    subid=unique({raw{2:end,1}}');
+end
 
 subnum=zeros(size(raw,1),1);
 for ind = 1:size(subid,1)
-    subnum(strcmp({raw{:,1}},subid{ind,1}),1) = ind;
+    subnum(strcmp(column1,subid{ind,1}),1) = ind;
 end
 subnum(1)=[];
 
@@ -179,13 +200,21 @@ varidxneuropsych = find(strcmp(raw(1,:),'FSIQ')==1):find(strcmp(raw(1,:),'VMI')=
 ageatscan=[raw{2:end,strcmp(raw(1,:),'Age at Scan')}]';
 time=[raw{2:end,strcmp(raw(1,:),'Time (days)')}]';
 type=[raw{2:end,strcmp(raw(1,:),'Type')}]';
-type2020=[raw{2:end,11}]';
+type2020=[raw{2:end,strcmp(raw(1,:),'Type2023')}]';
 dmri12voxelvol = [raw{2:end,strcmp(raw(1,:),'dmri_12dir_vol')}]';
 mpragevoxelvol = [raw{2:end,strcmp(raw(1,:),'mprage_vol')}]';
-intracranvol=[raw{2:end,strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')}]';
 
-
-BrainSegVolNotVent = [raw{2:end,strcmp(raw(1,:),'BrainSegVolNotVent')}]';
+if ischar(raw{2,strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')})
+    BrainSegVolNotVent = zeros(size(raw,1)-1,sum(strcmp(raw(1,:),'BrainSegVolNotVent')));
+    intracranvol = zeros(size(raw,1)-1,sum(strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')));
+    for ind = 1:size(raw,1)-1
+        BrainSegVolNotVent(ind,:) = str2double(raw{ind+1,strcmp(raw(1,:),'BrainSegVolNotVent')});
+        intracranvol(ind,:) = str2double(raw{ind+1,strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')});
+    end
+else
+    BrainSegVolNotVent = [raw{2:end,strcmp(raw(1,:),'BrainSegVolNotVent')}]';
+    intracranvol=[raw{2:end,strcmp(raw(1,:),'EstimatedTotalIntraCranialVol')}]';
+end
 
 bmttime=zeros(size(raw,1)-1,1);
 bmtage=zeros(size(raw,1)-1,1);
@@ -197,7 +226,9 @@ neuropsych = NaN*ones(size(raw,1)-1,length(varidxneuropsych));
 
 for ind = 2:size(raw,1)
     for vr = 1:length(varidxneuropsych)
-        if ~strcmp(raw{ind,varidxneuropsych(vr)},'.') && ~isnan(raw{ind,varidxneuropsych(vr)})
+        if strcmp(raw{ind,varidxneuropsych(vr)},'NaN')
+            neuropsych(ind-1,vr) = NaN;
+        elseif ~strcmp(raw{ind,varidxneuropsych(vr)},'.') && ~isnan(raw{ind,varidxneuropsych(vr)})
             neuropsych(ind-1,vr) = raw{ind,varidxneuropsych(vr)};
         end
     end
@@ -261,25 +292,41 @@ end
 intracranvol_mean(intracranvol_mean==0) = NaN;
 
 for cl = 1:size(varidxvol,2)
-    vols(:,cl) = [raw{2:end,varidxvol(cl)}]';
+    if strcmp(raw{2,varidxvol(cl)},'NaN') && strcmp(raw{4,varidxvol(cl)},'NaN') && strcmp(raw{6,varidxvol(cl)},'NaN') && strcmp(raw{8,varidxvol(cl)},'NaN') && strcmp(raw{10,varidxvol(cl)},'NaN')
+        vols(:,cl) = NaN*ones(size(raw,1)-1,1);
+    else
+        vols(:,cl) = [raw{2:end,varidxvol(cl)}]';
+    end
 end
 vols = vols ./ repmat(intracranvol_mean,1,size(vols,2)) .*100;
 vols(:, end+1) = intracranvol;
 vols_name = {raw{1,varidxvol} 'IntraCranialVol'};
 
 for cl = 1:size(varidxsurf,2)
-    surface(:,cl) = [raw{2:end,varidxsurf(cl)}]';
+    if strcmp(raw{2,varidxsurf(cl)},'NaN') && strcmp(raw{4,varidxsurf(cl)},'NaN') && strcmp(raw{6,varidxsurf(cl)},'NaN') && strcmp(raw{8,varidxsurf(cl)},'NaN') && strcmp(raw{10,varidxsurf(cl)},'NaN')
+        surface(:,cl) = NaN*ones(size(raw,1)-1,1);
+    else
+        surface(:,cl) = [raw{2:end,varidxsurf(cl)}]';
+    end
 end
 surface_name = {raw{1,varidxsurf}};
 
 for cl = 1:size(varidxthick,2)
-    thickness(:,cl) = [raw{2:end,varidxthick(cl)}]';
+    if strcmp(raw{2,varidxthick(cl)},'NaN') && strcmp(raw{4,varidxthick(cl)},'NaN') && strcmp(raw{6,varidxthick(cl)},'NaN') && strcmp(raw{8,varidxthick(cl)},'NaN') && strcmp(raw{10,varidxthick(cl)},'NaN')
+        thickness(:,cl) = NaN*ones(size(raw,1)-1,1);
+    else
+        thickness(:,cl) = [raw{2:end,varidxthick(cl)}]';
+    end
 end
 thickness_name = {raw{1,varidxthick}};
 
 lesion=zeros(size(raw,1)-1,size(varidxles,2));
 for ind = 1:size(varidxles,2)
-    lesion(:,ind)=[raw{2:end,varidxles(ind)}]';
+    if strcmp(raw{2,varidxles(ind)},'NaN') && strcmp(raw{4,varidxles(ind)},'NaN') && strcmp(raw{6,varidxles(ind)},'NaN') && strcmp(raw{8,varidxles(ind)},'NaN') && strcmp(raw{10,varidxles(ind)},'NaN')
+        lesion(:,ind) = NaN*ones(size(raw,1)-1,1);
+    else
+        lesion(:,ind)=[raw{2:end,varidxles(ind)}]';
+    end
 end
 lession(sum(lesion,2)==0) = NaN;
 spleniumvol_mean = zeros(size(lesion,1),1);
@@ -537,7 +584,7 @@ end
 if strcmp(neuropsych_order,'trend') 
     figid = figid + 40;
 end
-if draw_predict_corr == 1
+if draw_predict_corr == 1 && sum(sum(~isnan(neuropsych)))>0
     h(figid).fig=figure(figid);
     set(h(figid).fig,'Position',[50 50 2100 1200])
 end
@@ -736,12 +783,16 @@ for idx = 1:size(data_name_select,2)
     vec45_stat(3,1) = mean(vec45_slope,'omitnan');
     vec45_stat(3,2) = std(vec45_slope,'omitnan');
     
-    p_abstract(1,1) = ranksum(vec1(:,1),vec2(:,1));
-    p_abstract(1,2) = ranksum(vec1(:,1),vec23(:,1));
-    p_abstract(2,1) = ranksum(vec1(:,1),vec45(:,1));
-    p_abstract(2,2) = ranksum(vec1_slope,vec2_slope);
-    p_abstract(3,1) = ranksum(vec1_slope,vec23_slope);
-    p_abstract(3,2) = ranksum(vec1_slope,vec45_slope);
+    if sum(~isnan(vec1(:,1))) + sum(~isnan(vec2(:,1))) + sum(~isnan(vec23(:,1))) + sum(~isnan(vec45(:,1))) == 0 
+        p_abstract = NaN*ones(3,2);
+    else
+        p_abstract(1,1) = ranksum(vec1(:,1),vec2(:,1));
+        p_abstract(1,2) = ranksum(vec1(:,1),vec23(:,1));
+        p_abstract(2,1) = ranksum(vec1(:,1),vec45(:,1));
+        p_abstract(2,2) = ranksum(vec1_slope,vec2_slope);
+        p_abstract(3,1) = ranksum(vec1_slope,vec23_slope);
+        p_abstract(3,2) = ranksum(vec1_slope,vec45_slope);
+    end
     
     if strcmp(st_abstract{2+idx,1}(1:2),'FA') || strcmp(st_abstract{2+idx,1}(1:2),'MD') || strcmp(st_abstract{2+idx,1}(1:2),'AD') || strcmp(st_abstract{2+idx,1}(1:2),'RD')
 %         p_ancova(1,1) = eval_ancova(vec1,vec2,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'pre');
@@ -750,20 +801,28 @@ for idx = 1:size(data_name_select,2)
 %         p_ancova(2,2) = eval_ancova(vec1_slope,vec2_slope,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'slope');
 %         p_ancova(3,1) = eval_ancova(vec1_slope,vec23_slope,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'slope');
 %         p_ancova(3,2) = eval_ancova(vec1_slope,vec45_slope,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'slope');
-        p_ancova(1,1) = eval_ancova_with_age(vec1,vec2,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'pre',vec1_info.age,vec2_info.age);
-        p_ancova(1,2) = eval_ancova_with_age(vec1,vec23,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'pre',vec1_info.age,[vec2_info.age; vec3_info.age]);
-        p_ancova(2,1) = eval_ancova_with_age(vec1,vec45,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'pre',vec1_info.age,[vec4_info.age; vec5_info.age]);
-        p_ancova(2,2) = eval_ancova_with_age(vec1_slope,vec2_slope,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'slope',vec1_info.age,vec2_info.age);
-        p_ancova(3,1) = eval_ancova_with_age(vec1_slope,vec23_slope,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'slope',vec1_info.age,[vec2_info.age; vec3_info.age]);
-        p_ancova(3,2) = eval_ancova_with_age(vec1_slope,vec45_slope,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'slope',vec1_info.age,[vec4_info.age; vec5_info.age]);
+        if sum(~isnan(vec1(:,1))) + sum(~isnan(vec2(:,1))) + sum(~isnan(vec23(:,1))) + sum(~isnan(vec45(:,1))) == 0 
+            p_ancova = NaN*ones(3,2);
+        else
+            p_ancova(1,1) = eval_ancova_with_age(vec1,vec2,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'pre',vec1_info.age,vec2_info.age);
+            p_ancova(1,2) = eval_ancova_with_age(vec1,vec23,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'pre',vec1_info.age,[vec2_info.age; vec3_info.age]);
+            p_ancova(2,1) = eval_ancova_with_age(vec1,vec45,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'pre',vec1_info.age,[vec4_info.age; vec5_info.age]);
+            p_ancova(2,2) = eval_ancova_with_age(vec1_slope,vec2_slope,vec1_info.dmrivoxelvol,vec2_info.dmrivoxelvol,'slope',vec1_info.age,vec2_info.age);
+            p_ancova(3,1) = eval_ancova_with_age(vec1_slope,vec23_slope,vec1_info.dmrivoxelvol,[vec2_info.dmrivoxelvol; vec3_info.dmrivoxelvol],'slope',vec1_info.age,[vec2_info.age; vec3_info.age]);
+            p_ancova(3,2) = eval_ancova_with_age(vec1_slope,vec45_slope,vec1_info.dmrivoxelvol,[vec4_info.dmrivoxelvol; vec5_info.dmrivoxelvol],'slope',vec1_info.age,[vec4_info.age; vec5_info.age]);
+        end
     else
-        p_ancova(1,1) = eval_ancova(vec1,vec2,vec1_info.age,vec2_info.age,'pre');
-        p_ancova(1,2) = eval_ancova(vec1,vec23,vec1_info.age,[vec2_info.age; vec3_info.age],'pre');
-        p_ancova(2,1) = eval_ancova(vec1,vec45,vec1_info.age,[vec4_info.age; vec5_info.age],'pre');
-        p_ancova(2,2) = eval_ancova(vec1_slope,vec2_slope,vec1_info.age,vec2_info.age,'slope');
-        p_ancova(3,1) = eval_ancova(vec1_slope,vec23_slope,vec1_info.age,[vec2_info.age; vec3_info.age],'slope');
-        p_ancova(3,2) = eval_ancova(vec1_slope,vec45_slope,vec1_info.age,[vec4_info.age; vec5_info.age],'slope');
-%         p_ancova = ones(3,2)*1000;
+         if sum(~isnan(vec1(:,1))) + sum(~isnan(vec2(:,1))) + sum(~isnan(vec23(:,1))) + sum(~isnan(vec45(:,1))) == 0 
+            p_ancova = NaN*ones(3,2);
+         else
+            p_ancova(1,1) = eval_ancova(vec1,vec2,vec1_info.age,vec2_info.age,'pre');
+            p_ancova(1,2) = eval_ancova(vec1,vec23,vec1_info.age,[vec2_info.age; vec3_info.age],'pre');
+            p_ancova(2,1) = eval_ancova(vec1,vec45,vec1_info.age,[vec4_info.age; vec5_info.age],'pre');
+            p_ancova(2,2) = eval_ancova(vec1_slope,vec2_slope,vec1_info.age,vec2_info.age,'slope');
+            p_ancova(3,1) = eval_ancova(vec1_slope,vec23_slope,vec1_info.age,[vec2_info.age; vec3_info.age],'slope');
+            p_ancova(3,2) = eval_ancova(vec1_slope,vec45_slope,vec1_info.age,[vec4_info.age; vec5_info.age],'slope');
+    %         p_ancova = ones(3,2)*1000;
+         end
     end
     
     if strcmp(data_name_select{1,idx},'FA12-jhu-5')
@@ -781,7 +840,7 @@ for idx = 1:size(data_name_select,2)
         slope = reorder_slope(slope,cell_slope{g,1},subnum,selection,type2020,g,idx,sess1_pos);
     end
     
-    if draw_predict_corr == 1
+    if draw_predict_corr == 1 && sum(sum(~isnan(neuropsych)))
         draw_scatter_corr(neuropsych_draw,neuropsych_order,sbplid,vec1,vec2,vec3,vec4,vec5,vec6,vec7,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,st_abstract{2+idx,1},include_advanced,show_rapid)
         sbplid = sbplid + 1;
         if mod(idx,6) == 0       
@@ -948,32 +1007,33 @@ if draw_boxplot_dist == 1
 end
 
 
-
-figid = 4801;
-if include_advanced == 0 
-    figid = figid + 1000;
+if sum(sum(~isnan(neuropsych)))>0
+    figid = 4801;
+    if include_advanced == 0 
+        figid = figid + 1000;
+    end
+    if strcmp(neuropsych_order,'xpre-ypre') 
+        figid = figid + 20;
+    end
+    if strcmp(neuropsych_order,'trend') 
+        figid = figid + 40;
+    end
+    h(figid).fig=figure(figid);
+    set(h(figid).fig,'Position',[50 50 2100 1200])
+    draw_scatter_corr('Processing Speed',neuropsych_order,1,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    draw_scatter_corr('Visual Reasoning',neuropsych_order,2,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    draw_scatter_corr('Visual-Motor Integration',neuropsych_order,3,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    draw_scatter_corr('Verbal Reasoning',neuropsych_order,4,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    draw_scatter_corr('Working Memory',neuropsych_order,5,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    draw_scatter_corr('Fine Motor Dexterity',neuropsych_order,6,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
+    set(gcf, 'color', [1 1 1])
+    set(gcf, 'InvertHardcopy', 'off')
+    pause(0.10)
+    print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
+    pause(0.10)
+    close(h(figid).fig)
+    pause(0.05)
 end
-if strcmp(neuropsych_order,'xpre-ypre') 
-    figid = figid + 20;
-end
-if strcmp(neuropsych_order,'trend') 
-    figid = figid + 40;
-end
-h(figid).fig=figure(figid);
-set(h(figid).fig,'Position',[50 50 2100 1200])
-draw_scatter_corr('Processing Speed',neuropsych_order,1,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-draw_scatter_corr('Visual Reasoning',neuropsych_order,2,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-draw_scatter_corr('Visual-Motor Integration',neuropsych_order,3,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-draw_scatter_corr('Verbal Reasoning',neuropsych_order,4,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-draw_scatter_corr('Working Memory',neuropsych_order,5,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-draw_scatter_corr('Fine Motor Dexterity',neuropsych_order,6,vec1_info.loes,vec2_info.loes,vec3_info.loes,vec4_info.loes,vec5_info.loes,vec6_info.loes,vec7_info.loes,vec1_info,vec2_info,vec3_info,vec4_info,vec5_info,vec6_info,vec7_info,'Loes Score',include_advanced,show_rapid)
-set(gcf, 'color', [1 1 1])
-set(gcf, 'InvertHardcopy', 'off')
-pause(0.10)
-print(fullfile(save_path,['graph' num2str(figid,'%04.f')]),'-dpng','-r300')
-pause(0.10)
-close(h(figid).fig)
-pause(0.05)
         
 
 
@@ -1289,6 +1349,10 @@ for vr = 1:size(data,2)
     dt45post(isnan(dt45post))=[];
     dt2pre(isnan(dt2pre))=[];
     dt3pre(isnan(dt3pre))=[];
+    dt24pre(isnan(dt24pre))=[];
+    dt24post(isnan(dt24post))=[];
+    dt35pre(isnan(dt35pre))=[];
+    dt35post(isnan(dt35post))=[];
     
     d2020t1pre = data(type2020==1 & selection==1,vr);
     d2020t1post = data(type2020==1 & selection==2,vr);
@@ -1660,8 +1724,12 @@ for vr = 1:size(data,2)
     st{vr+2,166} = std(d2020t6post);
     
     
-    h(vr).fig = figure(vr);
-    set(h(vr).fig,'Position',[50 50 600 500])
+    if draw_graphs1set == 1
+        if sum(~isnan(data(:,vr)))>0
+            h(vr).fig = figure(vr);
+            set(h(vr).fig,'Position',[50 50 600 500])
+        end
+    end
     
     pbase = st{vr+2,3};
     ppost = st{vr+2,13};
@@ -1678,8 +1746,12 @@ for vr = 1:size(data,2)
     else
         mn = 0.98*mn;
     end
-    plot([0 0],[mn mx],'k-.','LineWidth',3)
-    hold on
+    if draw_graphs1set == 1
+        if sum(~isnan(data(:,vr)))>0
+            plot([0 0],[mn mx],'k-.','LineWidth',3)
+            hold on
+        end
+    end
     x=zeros(1,1);
     y=zeros(1,1);
     k=zeros(1,1);
@@ -1716,7 +1788,11 @@ for vr = 1:size(data,2)
             clr = [1 0 0];
             wd = 2;
         end
-        plot(bmttime(pos),data(pos,vr),lns,'Color',clr,'LineWidth',wd,'MarkerSize',10)
+        if draw_graphs1set == 1
+            if sum(~isnan(data(:,vr)))>0
+                plot(bmttime(pos),data(pos,vr),lns,'Color',clr,'LineWidth',wd,'MarkerSize',10)
+            end
+        end
         if sum(pos)==2
             xt=bmttime(pos & selection==1);
             yt=bmttime(pos & selection==2);
@@ -1755,38 +1831,42 @@ for vr = 1:size(data,2)
 %             hcpsx = hcpsx + 1;
 %         end
     end
-    hold off
-    xlabel('Time from treatment [days]')
-    if vr <= 3
-        ylabel('Cortical thickness [mm]')
-    elseif vr==4 || vr==5
-        ylabel('???')
-    elseif vr==8 || vr==10
-        ylabel('Volume [% of the ROI]')
-    elseif (vr>=11 && vr<=72) || vr== 6 || vr==7 || vr==9
-        ylabel('Volume [% of Cranial Volume]')
-    elseif vr == 73
-        ylabel('Volume [mm^3]')
-    elseif vr>=74 && vr<=194
-        ylabel('Fractional anisotropy')
-    elseif vr>=195 && vr<=315
-        ylabel('Mean diffusivity [*10^{-9}m^{2}/s]')
-    elseif vr>=316 && vr<=335
-        ylabel('Axial diffusivity [*10^{-9}m^{2}/s]')
-    elseif vr>=336 && vr<=355
-        ylabel('Radial diffusivity [*10^{-9}m^{2}/s]')
-    elseif vr==356
-        ylabel('Loes Score')
-    elseif vr>=357 && vr<=359
-        ylabel('Volume [% of Brain Volume without Ventricles]')
-    elseif vr==362
-        ylabel('Visual Reasoning')
-    elseif vr==364
-        ylabel('Processing Speed')
-    elseif vr==369
-        ylabel('Visual-Motor Integration')    
-    else
-        ylabel(data_name{1,vr})
+    if draw_graphs1set == 1
+        if sum(~isnan(data(:,vr)))>0
+            hold off
+            xlabel('Time from treatment [days]')
+            if vr <= 3
+                ylabel('Cortical thickness [mm]')
+            elseif vr==4 || vr==5
+                ylabel('???')
+            elseif vr==8 || vr==10
+                ylabel('Volume [% of the ROI]')
+            elseif (vr>=11 && vr<=72) || vr== 6 || vr==7 || vr==9
+                ylabel('Volume [% of Cranial Volume]')
+            elseif vr == 73
+                ylabel('Volume [mm^3]')
+            elseif vr>=74 && vr<=194
+                ylabel('Fractional anisotropy')
+            elseif vr>=195 && vr<=315
+                ylabel('Mean diffusivity [*10^{-9}m^{2}/s]')
+            elseif vr>=316 && vr<=335
+                ylabel('Axial diffusivity [*10^{-9}m^{2}/s]')
+            elseif vr>=336 && vr<=355
+                ylabel('Radial diffusivity [*10^{-9}m^{2}/s]')
+            elseif vr==356
+                ylabel('Loes Score')
+            elseif vr>=357 && vr<=359
+                ylabel('Volume [% of Brain Volume without Ventricles]')
+            elseif vr==362
+                ylabel('Visual Reasoning')
+            elseif vr==364
+                ylabel('Processing Speed')
+            elseif vr==369
+                ylabel('Visual-Motor Integration')    
+            else
+                ylabel(data_name{1,vr})
+            end
+        end
     end
     if ~isempty(x) && ~isempty(y)
         [~, st{vr+2,24}] = ttest(x,y);
@@ -1896,7 +1976,11 @@ for vr = 1:size(data,2)
             psl=abs(str2double(data_name{1,vr}(end-1:end)));
             st{vr+2,1} = ['JHU: ' jhu_labels{psl,2}];
         end
-        title(st{vr+2,1})
+        if draw_graphs1set == 1
+            if sum(~isnan(data(:,vr)))>0
+                title(st{vr+2,1})
+            end
+        end
     elseif length(data_name{1,vr})>7 && strcmp(data_name{1,vr}(6:7),'fs')
         if strcmp(data_name{1,vr}(end-5:end),'crblwm')
             st{vr+2,1} = 'FS: Cerebellar White Matter';
@@ -1925,44 +2009,59 @@ for vr = 1:size(data,2)
             psl2=find([fs_labels{:,1}]'==psl);
             st{vr+2,1} = ['FS ' num2str(psl) ': ' fs_labels{psl2,2}];
         end
-        title(st{vr+2,1})
-    elseif strcmp(data_name{1,vr},'FSIQ')
-        title('Full Scale IQ')
-    elseif strcmp(data_name{1,vr},'VERBAL')
-        title('Verbal Reasoning')
-    elseif strcmp(data_name{1,vr},'PERCEPT')
-        title('Visual Reasoning')
-    elseif strcmp(data_name{1,vr},'WMI')
-        title('Working Memory')
-    elseif strcmp(data_name{1,vr},'PSI')
-        title('Processing Speed')
-    elseif strcmp(data_name{1,vr},'Pegs-Ave')
-        title('Fine Motor Dexterity')
-    elseif strcmp(data_name{1,vr},'WMI')
-        title('Visual-Motor Integration')
-    else
-        title(data_name{1,vr})
+        if draw_graphs1set == 1
+            if sum(~isnan(data(:,vr)))>0
+                title(st{vr+2,1})
+            end
+        end
+    elseif draw_graphs1set == 1
+        if sum(~isnan(data(:,vr)))>0
+            if strcmp(data_name{1,vr},'FSIQ')
+                title('Full Scale IQ')
+            elseif strcmp(data_name{1,vr},'VERBAL')
+                title('Verbal Reasoning')
+            elseif strcmp(data_name{1,vr},'PERCEPT')
+                title('Visual Reasoning')
+            elseif strcmp(data_name{1,vr},'WMI')
+                title('Working Memory')
+            elseif strcmp(data_name{1,vr},'PSI')
+                title('Processing Speed')
+            elseif strcmp(data_name{1,vr},'Pegs-Ave')
+                title('Fine Motor Dexterity')
+            elseif strcmp(data_name{1,vr},'WMI')
+                title('Visual-Motor Integration')
+            else
+                title(data_name{1,vr})
+            end
+        end
     end
-    axis([-150 460 mn mx])
-    grid on
-    set(gca,'FontSize',14,'LineWidth',2)
-    
-    pause(0.15)
-%     print(fullfile(save_path,['graph' num2str(vr,'%03.f')]),'-dpng','-r300')
-%     pause(0.15)
-    close(h(vr).fig)
-    pause(0.1)
+    if draw_graphs1set == 1
+        if sum(~isnan(data(:,vr)))>0
+            axis([-150 460 mn mx])
+            grid on
+            set(gca,'FontSize',14,'LineWidth',2)
+
+            pause(0.15)
+            print(fullfile(save_path,['graph' num2str(vr,'%03.f')]),'-dpng','-r300')
+            pause(0.15)
+            close(h(vr).fig)
+            pause(0.1)
+        end
+    end
     
       
-    
-    h(2000+vr).fig = figure(2000+vr);
-    set(h(2000+vr).fig,'Position',[50 50 600 500])
-    
     pbase = st{vr+2,76};
 %     ppost = st{vr+2,13};
-    
-    plot([0 0],[mn mx],'k-.','LineWidth',3)
-    hold on
+
+    if draw_graphs2set == 1
+        if sum(~isnan(data(:,vr)))>0
+            h(2000+vr).fig = figure(2000+vr);
+            set(h(2000+vr).fig,'Position',[50 50 600 500])
+
+            plot([0 0],[mn mx],'k-.','LineWidth',3)
+            hold on
+        end
+    end
     x=zeros(1,1);
     y=zeros(1,1);
     bmtagex=zeros(1,1);
@@ -1981,8 +2080,12 @@ for vr = 1:size(data,2)
         tp = tp(1);
         prg=slow_progression(pos);
         prg=prg(1);
-        [lns,clr,wd,mrksz]=decide_plot_parameters(tp,prg,show_rapid);
-        plot(bmttime(pos),data(pos,vr),lns,'Color',clr,'LineWidth',wd,'MarkerSize',mrksz)
+        if draw_graphs2set == 1
+            if sum(~isnan(data(:,vr)))>0
+                [lns,clr,wd,mrksz]=decide_plot_parameters(tp,prg,show_rapid);
+                plot(bmttime(pos),data(pos,vr),lns,'Color',clr,'LineWidth',wd,'MarkerSize',mrksz)
+            end
+        end
         if sum(pos)==2
             xt=bmttime(pos & selection==1);
             yt=bmttime(pos & selection==2);
@@ -2005,40 +2108,44 @@ for vr = 1:size(data,2)
             end
         end
     end
-    hold off
-    xlabel('Time from treatment [days]')
-    if vr <= 3
-        YLBLgraph='Cortical thickness [mm]';
-    elseif vr==4 || vr==5
-        YLBLgraph='???';
-    elseif vr==8 || vr==10
-        YLBLgraph='Volume [% of the ROI]';
-    elseif (vr>=11 && vr<=72) || vr== 6 || vr==7 || vr==9
-        YLBLgraph='Volume [% of Cranial Volume]';
-    elseif vr == 73
-        YLBLgraph='Volume [mm^3]';
-    elseif vr>=74 && vr<=194
-        YLBLgraph='Fractional anisotropy';
-    elseif vr>=195 && vr<=315
-        YLBLgraph='Mean diffusivity [*10^{-9}m^{2}/s]';
-    elseif vr>=316 && vr<=343
-        YLBLgraph='Axial diffusivity [*10^{-9}m^{2}/s]';
-    elseif vr>=344 && vr<=371
-        YLBLgraph='Radial diffusivity [*10^{-9}m^{2}/s]';
-    elseif vr==372
-        YLBLgraph='Loes Score';
-    elseif vr>=373 && vr<=375
-        YLBLgraph='Volume [% of Brain Volume without Ventricles]';
-    elseif vr==378
-        YLBLgraph='Visual Reasoning';
-    elseif vr==380
-        YLBLgraph='Processing Speed';
-    elseif vr==385
-        YLBLgraph='Visual-Motor Integration';    
-    else
-        YLBLgraph=data_name{1,vr};
+    if draw_graphs2set == 1
+        if sum(~isnan(data(:,vr)))>0
+            hold off
+            xlabel('Time from treatment [days]')
+            if vr <= 3
+                YLBLgraph='Cortical thickness [mm]';
+            elseif vr==4 || vr==5
+                YLBLgraph='???';
+            elseif vr==8 || vr==10
+                YLBLgraph='Volume [% of the ROI]';
+            elseif (vr>=11 && vr<=72) || vr== 6 || vr==7 || vr==9
+                YLBLgraph='Volume [% of Cranial Volume]';
+            elseif vr == 73
+                YLBLgraph='Volume [mm^3]';
+            elseif vr>=74 && vr<=194
+                YLBLgraph='Fractional anisotropy';
+            elseif vr>=195 && vr<=315
+                YLBLgraph='Mean diffusivity [*10^{-9}m^{2}/s]';
+            elseif vr>=316 && vr<=343
+                YLBLgraph='Axial diffusivity [*10^{-9}m^{2}/s]';
+            elseif vr>=344 && vr<=371
+                YLBLgraph='Radial diffusivity [*10^{-9}m^{2}/s]';
+            elseif vr==372
+                YLBLgraph='Loes Score';
+            elseif vr>=373 && vr<=375
+                YLBLgraph='Volume [% of Brain Volume without Ventricles]';
+            elseif vr==378
+                YLBLgraph='Visual Reasoning';
+            elseif vr==380
+                YLBLgraph='Processing Speed';
+            elseif vr==385
+                YLBLgraph='Visual-Motor Integration';    
+            else
+                YLBLgraph=data_name{1,vr};
+            end
+            ylabel(YLBLgraph)
+        end
     end
-    ylabel(YLBLgraph)
     if ~isempty(x) && ~isempty(y)
         [~, st{vr+2,140}] = ttest(x(tpxy==2),y(tpxy==2));
         [~, st{vr+2,141}] = ttest(x(tpxy==3),y(tpxy==3));
@@ -2112,52 +2219,57 @@ for vr = 1:size(data,2)
 %     text(-140,0.94*mx,['p=' num2str(pbase,'%.6f')],'FontSize',12);
 %     text(150,0.97*mx,'PreBMT vs PostBMT','FontSize',12);
 %     text(150,0.94*mx,['p=' num2str(ppostpaired,'%.6f')],'FontSize',12);
-    if length(data_name{1,vr})>8 && strcmp(data_name{1,vr}(6:8),'jhu')
-        TTLE=st{vr+2,1};
-    elseif length(data_name{1,vr})>7 && strcmp(data_name{1,vr}(6:7),'fs')
-        TTLE=st{vr+2,1};
-    elseif strcmp(data_name{1,vr},'FSIQ')
-        TTLE='Full Scale IQ';
-    elseif strcmp(data_name{1,vr},'VERBAL')
-        TTLE='Verbal Reasoning';
-    elseif strcmp(data_name{1,vr},'PERCEPT')
-        TTLE='Visual Reasoning';
-    elseif strcmp(data_name{1,vr},'WMI')
-        TTLE='Working Memory';
-    elseif strcmp(data_name{1,vr},'PSI')
-        TTLE='Processing Speed';
-    elseif strcmp(data_name{1,vr},'Pegs-Ave')
-        TTLE='Fine Motor Dexterity';
-    elseif strcmp(data_name{1,vr},'WMI')
-        TTLE='Visual-Motor Integration';
-    else
-        TTLE=data_name{1,vr};
+
+    if draw_graphs2set == 1
+        if sum(~isnan(data(:,vr)))>0
+            if length(data_name{1,vr})>8 && strcmp(data_name{1,vr}(6:8),'jhu')
+                TTLE=st{vr+2,1};
+            elseif length(data_name{1,vr})>7 && strcmp(data_name{1,vr}(6:7),'fs')
+                TTLE=st{vr+2,1};
+            elseif strcmp(data_name{1,vr},'FSIQ')
+                TTLE='Full Scale IQ';
+            elseif strcmp(data_name{1,vr},'VERBAL')
+                TTLE='Verbal Reasoning';
+            elseif strcmp(data_name{1,vr},'PERCEPT')
+                TTLE='Visual Reasoning';
+            elseif strcmp(data_name{1,vr},'WMI')
+                TTLE='Working Memory';
+            elseif strcmp(data_name{1,vr},'PSI')
+                TTLE='Processing Speed';
+            elseif strcmp(data_name{1,vr},'Pegs-Ave')
+                TTLE='Fine Motor Dexterity';
+            elseif strcmp(data_name{1,vr},'WMI')
+                TTLE='Visual-Motor Integration';
+            else
+                TTLE=data_name{1,vr};
+            end
+            title(TTLE)
+            axis([-150 460 mn mx])
+            grid on
+            set(gca,'FontSize',14,'LineWidth',2)
+
+            pause(0.15)
+            print(fullfile(save_path,['graph' num2str(2000+vr,'%04.f')]),'-dpng','-r300')
+            pause(0.15)
+            close(h(2000+vr).fig)
+            pause(0.1)
+
+
+            h(12000+vr).fig = figure(12000+vr);
+            set(h(12000+vr).fig,'Position',[50 50 480 500])
+            Yp1 = data(type2020==1 & selection==1,vr);
+            Yp2 = data(type2020==2 & selection==1,vr);
+            Yp3 = data(type2020==3 & selection==1,vr);
+            Yp4 = data(type2020==4 & selection==1,vr);
+            Yp5 = data(type2020==5 & selection==1,vr); 
+            draw_boxplot_distribution_baseline(Yp1,Yp2,Yp3,Yp4,Yp5,YLBLgraph,TTLE)
+            pause(0.15)
+            print(fullfile(save_path,['graph' num2str(12000+vr,'%05.f')]),'-dpng','-r300')
+            pause(0.15)
+            close(h(12000+vr).fig)
+            pause(0.1)
+        end
     end
-    title(TTLE)
-    axis([-150 460 mn mx])
-    grid on
-    set(gca,'FontSize',14,'LineWidth',2)
-    
-    pause(0.15)
-    print(fullfile(save_path,['graph' num2str(2000+vr,'%04.f')]),'-dpng','-r300')
-    pause(0.15)
-    close(h(2000+vr).fig)
-    pause(0.1)
-  
-    
-    h(12000+vr).fig = figure(12000+vr);
-    set(h(12000+vr).fig,'Position',[50 50 480 500])
-    Yp1 = data(type2020==1 & selection==1,vr);
-    Yp2 = data(type2020==2 & selection==1,vr);
-    Yp3 = data(type2020==3 & selection==1,vr);
-    Yp4 = data(type2020==4 & selection==1,vr);
-    Yp5 = data(type2020==5 & selection==1,vr); 
-    draw_boxplot_distribution_baseline(Yp1,Yp2,Yp3,Yp4,Yp5,YLBLgraph,TTLE)
-    pause(0.15)
-    print(fullfile(save_path,['graph' num2str(12000+vr,'%05.f')]),'-dpng','-r300')
-    pause(0.15)
-    close(h(12000+vr).fig)
-    pause(0.1)
     disp(vr)
 end
 
