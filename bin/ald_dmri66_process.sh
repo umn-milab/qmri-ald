@@ -36,10 +36,10 @@ SUB=$4
 SESS=$5
 DICOMFOLDER=$6
 
-NIFTITOOLS=/home/range1-raid1/labounek/toolbox/matlab/NIfTI_tools
-BINDIR=/home/range1-raid1/labounek/bin
+NIFTITOOLS=~/toolbox/matlab/NIfTI_tools
+BINDIR=~/bin
 MATLABDIR=/opt/local/matlab2017b
-SPM=/home/range1-raid1/labounek/toolbox/matlab/spm12
+SPM=~/toolbox/matlab/spm12
 
 DISTANCE=12 #mm
 VOXELEDGE=2 #mm

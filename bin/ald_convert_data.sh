@@ -29,9 +29,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
+DATAFOLDER=~/data/ALD
 
-LIST=$DATAFOLDER/subject_list_20230307.txt
+LIST=$DATAFOLDER/subject_list.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 
@@ -48,7 +48,6 @@ for SUB in `cat $LIST`;do
 		    mkdir $NIIFOLDER/$SESS
 		    chmod 770 $NIIFOLDER/$SESS
 	    fi
-		#echo $SESS
         if [ ! -f $NIIFOLDER/$SESS/mprage.nii.gz ];then
             # mprage export
             STRING="MPRAGE_Series"

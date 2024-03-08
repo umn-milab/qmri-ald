@@ -29,15 +29,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#DATAFOLDER=/home/range1-raid1/labounek/data-on-range4/renda/CSPINE
-#DATAFOLDER=/home/labounek/data/ALD
-DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
-#DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/controls/brain_ALD
+DATAFOLDER=~/data/ALD
+
 #NAME=dmri_12dir
 NAME=mprage
 #NAME=*Segmentation
 
-LIST=$DATAFOLDER/subject_list_20230307.txt
+LIST=$DATAFOLDER/subject_list.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 
@@ -71,7 +69,7 @@ for SUB in `cat $LIST`;do
             fi
             echo "$DIM1$DIM2$DIM3$DIM4$PIXDIM1$PIXDIM2$PIXDIM3$PIXDIM4" >> $DATAFOLDER/${NAME}_info_list.txt
         else
-            echo $SESS >> /home/range1-raid1/labounek/ald_session_list_20201022.txt
+            echo $SESS >> ~/ald_session_list_git.txt
         fi
     done
 done

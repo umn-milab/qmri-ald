@@ -29,13 +29,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
-#DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/controls/brain_ALD
+DATAFOLDER=~/data/ALD
 
 LESION=fs_lesion
 ASEG=fs_aseg
 
-LIST=$DATAFOLDER/subject_list_20230307.txt
+LIST=$DATAFOLDER/subject_list.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 RESULTFOLDER=$DATAFOLDER/results
@@ -100,8 +99,7 @@ for SUB in `cat $LIST`;do
 			LESIONVOL=`fslstats $MPRFOLDER/$SESS/$LESION.nii.gz -V | awk '{print $2}'`
 
 			echo "$LESIONVOL	0	0	0	0	0	0" >> $RESULTFOLDER/lesion_volumetrics.txt
-        else
-            #echo $SESS            
+        else           
             echo "0	0	0	0	0	0	0" >> $RESULTFOLDER/lesion_volumetrics.txt
         fi
 		echo "$SESS processed."

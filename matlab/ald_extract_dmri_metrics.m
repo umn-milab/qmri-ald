@@ -29,11 +29,11 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 clear all; clc;
-data_folder='/home/range1-raid1/labounek/data-on-porto';
+data_folder='~/data';
 project_folder=fullfile(data_folder,'ALD');
 xls_file = fullfile(project_folder,'results','ALD_20230307.xlsx');
 
-addpath('/home/range1-raid1/labounek/toolbox/matlab/spm12');
+addpath('~/toolbox/matlab/spm12');
 
 [num, txt, raw] = xlsread(xls_file);
 
@@ -47,7 +47,7 @@ fslbls=[2;3;4;5;7;8;10;11;12;13;14;15;16;17;18;24;26;28;31;41;42;43;44;46;47;49;
 
 for ind = 2:size(raw,1)
 % for ind = 2:2
-        if raw{ind,10} == 0
+        if raw{ind,strcmp(raw(1,:),'Type')} == 0
                 project_folder=fullfile(data_folder,'controls','brain_ALD');
         else
                 project_folder=fullfile(data_folder,'ALD');

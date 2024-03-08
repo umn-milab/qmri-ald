@@ -29,8 +29,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-GRAPHFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD/pictures/20230307/graphs202304
-SELECTIONFOLDER=${GRAPHFOLDER}_manuscript_selection
+GRAPHFOLDER=~/data/ALD/pictures/graphs
+SELECTIONFOLDER=${GRAPHFOLDER}_selection
 
 cd $GRAPHFOLDER
 cp 00000_legend2020*.png graph4*.png graph2003.png graph2054.png graph2057.png graph2064.png graph2070.png graph2071.png graph2073.png graph2074.png graph2075.png graph2076.png graph2091.png graph2092.png graph2093.png graph2195.png graph2196.png graph2197.png graph2212.png graph2213.png graph2214.png graph2316.png graph2317.png graph2318.png graph2333.png graph2334.png graph2335.png graph2336.png graph2337.png graph2338.png graph2344.png graph2346.png graph2361.png graph2362.png graph2363.png graph2364.png graph2365.png graph2366.png graph2367.png graph2368.png graph2369.png graph2372.png graph2386.png graph7111.png graph7112.png graph7113.png graph7114.png $SELECTIONFOLDER

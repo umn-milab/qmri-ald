@@ -30,11 +30,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 PROJECT=ALD
-DATAFOLDER=/home/porto-raid2/nestrasil-data/$PROJECT
-#PROJECT=controls/brain_ALD
-#DATAFOLDER=/home/porto-raid2/nestrasil-data/$PROJECT
+DATAFOLDER=~/data/$PROJECT
 
-LIST=$DATAFOLDER/subject_list_20230307.txt
+LIST=$DATAFOLDER/subject_list.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 RESULTFOLDER=$DATAFOLDER/results
@@ -68,7 +66,6 @@ if [ ! -d $DMRI66RESULT ];then
 fi
 
 for SUB in `cat $LIST`;do
-#for SUB in 7320MAKI;do # 2938ROPO 3450ADOR 4165LOCH 5797IACH 7226CRPO \ 7111GETI 7151DOBU 7166ASTH 7243LAVE 7320MAKI
     if [ ! -d $MPRRESULT/$SUB ];then
 		mkdir $MPRRESULT/$SUB
         chmod 770 $MPRRESULT/$SUB

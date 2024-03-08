@@ -29,8 +29,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
-#DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/controls/brain_ALD
+DATAFOLDER=~/data/ALD
 
 #NAME=*Segmentation
 #NAME=mprage
