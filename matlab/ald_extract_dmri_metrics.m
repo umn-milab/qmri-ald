@@ -53,7 +53,11 @@ for ind = 2:size(raw,1)
                 project_folder=fullfile(data_folder,'ALD');
         end
         if ~ischar(raw{ind,1})
-            raw{ind,1} = num2str(raw{ind,1},'%03.f');
+            if raw{ind,strcmp(raw(1,:),'Type')} == 0
+                raw{ind,1} = num2str(raw{ind,1},'%03.f');
+            else
+                raw{ind,1} = num2str(raw{ind,1});
+            end
         end
         result_folder = fullfile(project_folder,'results','dmri',raw{ind,1},raw{ind,2});
         FA12_file = fullfile(result_folder,'dti12_FA');
