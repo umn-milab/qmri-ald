@@ -30,14 +30,14 @@ The script `bin/ald_mri_info.sh` can read MRI image info such as voxel dimension
 
 ## Automated pipelines
 
-The bash script `bin/ald_pipeline.sh` proceed the entire image analysis. The pipeline provides:
+The bash script `bin/ald_pipeline.sh` enables the entire image analysis. The pipeline provides:
 - MPRAGE image analysis
 - DTI analysis
 - T1-rho / T2-rho image analysis
 
 ## DTI analysis
 
-The bash script `bin/ald_dmri_process.sh` proceed automated preprocessing and DTI analysis of longitudinal 12-directional diffusion MRI data for the protocol optimized and presented in `(Pierpont and Labounek, et al. 2024)`.
+The bash script `bin/ald_dmri_process.sh` enables automated preprocessing and DTI analysis of longitudinal 12-directional diffusion MRI data for the protocol optimized and presented in `(Pierpont and Labounek, et al. 2024)`.
 
 After DTI analysis is done, the matlab script `matlab/ald_extract_dmri_metrics.m` can extract local microstructural measurements from DTI results.
 
