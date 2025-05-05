@@ -29,13 +29,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-DATAFOLDER=~/data/ALD
+DATAFOLDER=/home/range1-raid1/labounek/data-on-porto/ALD
 
 #NAME=dmri_12dir
 NAME=mprage
 #NAME=*Segmentation
 
-LIST=$DATAFOLDER/subject_list.txt
+LIST=$DATAFOLDER/subject_list_20230307.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 

@@ -29,9 +29,10 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 clear all; clc;
-data_folder='~/data';
+data_folder='/home/range1-raid1/labounek/data-on-porto';
 project_folder=fullfile(data_folder,'ALD');
-xls_file = fullfile(project_folder,'results','ALD_20230307.xlsx');
+% xls_file = fullfile(project_folder,'results','ALD_20230307.xlsx');
+xls_file = fullfile(project_folder,'results','ALD_20241106.xlsx');
 
 addpath('~/toolbox/matlab/spm12');
 

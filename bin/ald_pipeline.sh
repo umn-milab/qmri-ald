@@ -30,9 +30,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 PROJECT=ALD
-DATAFOLDER=~/data/$PROJECT
+DATAFOLDER=~/data-on-porto/$PROJECT
 
-LIST=$DATAFOLDER/subject_list.txt
+LIST=$DATAFOLDER/subject_list_20230307.txt
 DICOMFOLDER=$DATAFOLDER/dicom
 NIIFOLDER=$DATAFOLDER/nii
 RESULTFOLDER=$DATAFOLDER/results

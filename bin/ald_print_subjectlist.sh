@@ -29,7 +29,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-DATAFOLDER=~/labounek/data/ALD
+DATAFOLDER=~/data-on-porto/ALD
 
 NAME=dmri_12dir
 #NAME=*Segmentation
@@ -42,6 +42,6 @@ OLDFOLDER=`pwd`
 cd $NIIFOLDER
 for SUB in `cat $LIST`;do
     for SESS in `ls -d ${SUB}/*`;do
-        echo $SESS >> $DATAFOLDER/subject_list_20230307_allsessions.txt         
+        echo $SESS >> $DATAFOLDER/subject_list_20230307_allsessions2.txt         
     done
 done
