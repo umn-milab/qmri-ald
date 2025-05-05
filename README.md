@@ -30,21 +30,21 @@ The script `bin/ald_mri_info.sh` can read MRI image info such as voxel dimension
 
 ## Automated pipelines
 
-The bash script `bin/ald_pipeline.sh` proceed the entire image analysis. The pipeline provides:
+The bash script `bin/ald_pipeline.sh` enables the entire image analysis. The pipeline provides:
 - MPRAGE image analysis
 - DTI analysis
 - T1-rho / T2-rho image analysis
 
 ## DTI analysis
 
-The bash script `bin/ald_dmri_process.sh` proceed automated preprocessing and DTI analysis of longitudinal 12-directional diffusion MRI data for the protocol optimized and presented in `(Pierpont and Labounek, et al. 2024)`.
+The bash script `bin/ald_dmri_process.sh` enables automated preprocessing and DTI analysis of longitudinal 12-directional diffusion MRI data for the protocol optimized and presented in `(Pierpont and Labounek, et al. 2024)`.
 
 After DTI analysis is done, the matlab script `matlab/ald_extract_dmri_metrics.m` can extract local microstructural measurements from DTI results.
 
 When all results are organized in excel sheet like in the `data/data_pierpont_labounek_2024.xlsx` file, then the matlab script `matlab/ald_evaluation.m` can provide statistical analysis and make figures including graphs and tables as presented in `(Pierpont and Labounek, et al. 2024)`.
 
 ## References
-Pierpont E I, Labounek R, Gupta A O, Lund T C, Orchard P J, Dobyns W B, Bondy M, Paulson A, Metz A, Shanley R, Wozniak J R, Mueller B A, Loes D, Nascene D R, & Nestrasil I (2024). Diffusion tensor imaging is sensitive to early demyelinating lesions and predicts neurocognitive outcome in boys with adrenoleukodystrophy. [Under review]
+Pierpont E I, Labounek R, Gupta A O, Lund T C, Orchard P J, Dobyns W B, Bondy M, Paulson A, Metz A, Shanley R, Wozniak J R, Mueller B A, Loes D, Nascene D R, & Nestrasil I (2024). Diffusion tensor imaging in boys with adrenoleukodystrophy: identification of cerebral disease and association with neurocognitive outcomes. *Neurology*
 
 ## Copyright
 
