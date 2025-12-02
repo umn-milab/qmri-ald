@@ -41,8 +41,8 @@ addpath('~/toolbox/matlab/spm12');
 cols = size(raw,2);
 FA12_mat = zeros(size(raw,1)-1,121);
 MD12_mat = zeros(size(raw,1)-1,121);
-AD12_mat = zeros(size(raw,1)-1,28);
-RD12_mat = zeros(size(raw,1)-1,28);
+AD12_mat = zeros(size(raw,1)-1,71);
+RD12_mat = zeros(size(raw,1)-1,71);
 
 fslbls=[2;3;4;5;7;8;10;11;12;13;14;15;16;17;18;24;26;28;31;41;42;43;44;46;47;49;50;51;52;53;54;58;60;63;77;85;251;252;253;254;255];
 
@@ -411,10 +411,10 @@ for ind = 2:size(raw,1)
                         FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                         FA12_mat(ind-1,roi_ind+15) = mean(FA12_vec);
                         MD12_mat(ind-1,roi_ind+15) = mean(MD12_vec);
-                        if lbls(roi_ind,1) <= 5
-                            AD12_mat(ind-1,roi_ind+15) = mean(AD12_vec);
-                            RD12_mat(ind-1,roi_ind+15) = mean(RD12_vec);
-                        end
+%                         if lbls(roi_ind,1) <= 5
+                        AD12_mat(ind-1,roi_ind+15) = mean(AD12_vec);
+                        RD12_mat(ind-1,roi_ind+15) = mean(RD12_vec);
+%                         end
                 end
                 if asegres == 1                     
                         for fsroi_ind = 1:size(fslbls,1)
@@ -511,8 +511,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+10) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+10) = mean(MD12_vec);
-                AD12_mat(ind-1,21) = mean(AD12_vec);
-                RD12_mat(ind-1,21) = mean(RD12_vec);
+                AD12_mat(ind-1,64) = mean(AD12_vec);
+                RD12_mat(ind-1,64) = mean(RD12_vec);
 
                 % JHU: Corpus callosum without lesion extraction
                 FA12_vec = FA12( (jhu==3 | jhu==4 | jhu==5) & lesion~=1 );
@@ -525,8 +525,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+11) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+11) = mean(MD12_vec);
-                AD12_mat(ind-1,22) = mean(AD12_vec);
-                RD12_mat(ind-1,22) = mean(RD12_vec);
+                AD12_mat(ind-1,65) = mean(AD12_vec);
+                RD12_mat(ind-1,65) = mean(RD12_vec);
 
                 % JHU: CST without lesion extraction
                 FA12_vec = FA12( (jhu==7 | jhu==8 | jhu==15 | jhu==16 | jhu==19 | jhu==20) & lesion~=1 );
@@ -539,8 +539,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+12) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+12) = mean(MD12_vec);
-                AD12_mat(ind-1,23) = mean(AD12_vec);
-                RD12_mat(ind-1,23) = mean(RD12_vec);
+                AD12_mat(ind-1,66) = mean(AD12_vec);
+                RD12_mat(ind-1,66) = mean(RD12_vec);
 
                 % JHU: Genu of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==3 & lesion~=1 );
@@ -553,8 +553,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+13) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+13) = mean(MD12_vec);
-                AD12_mat(ind-1,24) = mean(AD12_vec);
-                RD12_mat(ind-1,24) = mean(RD12_vec);
+                AD12_mat(ind-1,67) = mean(AD12_vec);
+                RD12_mat(ind-1,67) = mean(RD12_vec);
 
                 % JHU: Body of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==4 & lesion~=1 );
@@ -567,8 +567,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+14) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+14) = mean(MD12_vec);
-                AD12_mat(ind-1,25) = mean(AD12_vec);
-                RD12_mat(ind-1,25) = mean(RD12_vec);
+                AD12_mat(ind-1,68) = mean(AD12_vec);
+                RD12_mat(ind-1,68) = mean(RD12_vec);
 
                 % JHU: Splenium of corpus callosum without lesion extraction
                 FA12_vec = FA12( jhu==5 & lesion~=1 );
@@ -581,8 +581,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+15) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+15) = mean(MD12_vec);
-                AD12_mat(ind-1,26) = mean(AD12_vec);
-                RD12_mat(ind-1,26) = mean(RD12_vec);
+                AD12_mat(ind-1,69) = mean(AD12_vec);
+                RD12_mat(ind-1,69) = mean(RD12_vec);
 
                 % JHU: Retrolenticular part of internal capsule without lesion
                 FA12_vec = FA12( (jhu==21 | jhu==22) & lesion~=1 );
@@ -595,8 +595,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+16) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+16) = mean(MD12_vec);
-                AD12_mat(ind-1,27) = mean(AD12_vec);
-                RD12_mat(ind-1,27) = mean(RD12_vec);
+                AD12_mat(ind-1,70) = mean(AD12_vec);
+                RD12_mat(ind-1,70) = mean(RD12_vec);
 
                 % JHU: Anterior corona radiata without lesion
                 FA12_vec = FA12( (jhu==23 | jhu==24) & lesion~=1 );
@@ -609,8 +609,8 @@ for ind = 2:size(raw,1)
                 FA12_vec(FA12_vec < 0.1 | FA12_vec>1) = [];
                 FA12_mat(ind-1,roi_ind+15+fsroi_ind+17) = mean(FA12_vec);
                 MD12_mat(ind-1,roi_ind+15+fsroi_ind+17) = mean(MD12_vec);
-                AD12_mat(ind-1,28) = mean(AD12_vec);
-                RD12_mat(ind-1,28) = mean(RD12_vec);
+                AD12_mat(ind-1,71) = mean(AD12_vec);
+                RD12_mat(ind-1,71) = mean(RD12_vec);
         end
         disp(['Acquisition n. ' num2str(ind-1) ' processed.'])
 end
@@ -625,10 +625,10 @@ var_name6=cell(0,0);
 for roi_ind = 1:size(lbls,1)
         var_name1{1,roi_ind} = ['FA12_jhu_' num2str(lbls(roi_ind,1))];
         var_name2{1,roi_ind} = ['MD12_jhu_' num2str(lbls(roi_ind,1))];
-        if lbls(roi_ind,1) <=5
-            var_name5{1,roi_ind} = ['AD12_jhu_' num2str(lbls(roi_ind,1))];
-            var_name6{1,roi_ind} = ['RD12_jhu_' num2str(lbls(roi_ind,1))];
-        end
+%         if lbls(roi_ind,1) <=5
+        var_name5{1,roi_ind} = ['AD12_jhu_' num2str(lbls(roi_ind,1))];
+        var_name6{1,roi_ind} = ['RD12_jhu_' num2str(lbls(roi_ind,1))];
+%         end
 end
 var_name3=cell(0,0);
 var_name4=cell(0,0);
